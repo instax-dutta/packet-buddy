@@ -1,5 +1,4 @@
-"""Network usage monitoring with psutil."""
-
+import asyncio
 import psutil
 import subprocess
 from datetime import datetime
