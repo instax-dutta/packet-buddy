@@ -30,7 +30,7 @@
     <key>EnvironmentVariables</key>
     <dict>
         <key>NEON_DB_URL</key>
-        <string>postgresql://neondb_owner:npg_K7O8ojTCFiwM@ep-flat-waterfall-a112l978-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&amp;channel_binding=require</string>
+        <string>YOUR_NEON_DB_URL_HERE</string>
     </dict>
     
     <key>ThrottleInterval</key>
@@ -38,5 +38,8 @@
     
     <key>ProcessType</key>
     <string>Background</string>
+    
+    <key>Nice</key>
+    <integer>10</integer>
 </dict>
 </plist>
