@@ -11,6 +11,14 @@ Always check the local logs first:
   - `ModuleNotFoundError`: Usually means the `pip` sync failed during `pb update`. Solution: rerun `venv` installation.
   - `0 B` usage: Primary interface detection failure. Check `monitor._get_primary_interface()` logs.
 
+## 2. Cross-Platform Runtime
+
+The application is designed to run as a "headless" daemon.
+
+- **macOS**: Controlled via `launchd` using the custom `.plist` in `~/Library/LaunchAgents`.
+- **Windows**: Controlled via **Task Scheduler** (`schtasks`). It is configured to run at startup with "Highest Privileges" to ensure it survives user logouts.
+- **Linux**: Controlled via **Systemd** (`systemctl`). Installed as a user-level service (`--user`) for security and persistence.
+
 ## ♻️ Service Control Manual
 
 ### macOS (launchctl)
@@ -24,6 +32,12 @@ Always check the local logs first:
 - **Status**: `schtasks /query /tn PacketBuddy`
 - **Restart**: `schtasks /end /tn PacketBuddy` then `schtasks /run /tn PacketBuddy`
 - **Manual Debug**: `.\venv\Scripts\python.exe -m src.api.server`
+
+### Linux (systemd)
+
+- **Status**: `systemctl --user status packetbuddy`
+- **Restart**: `systemctl --user restart packetbuddy`
+- **Manual Debug**: `source venv/bin/activate && python -m src.api.server`
 
 ## 📊 Database Management
 

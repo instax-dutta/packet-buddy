@@ -2,9 +2,9 @@
 
 # 📊 PacketBuddy — Open Source Network Usage & Bandwidth Tracker
 
-### *The Lightweight, Real-Time Internet Data Monitor for macOS & Windows*
+### *The Lightweight, Real-Time Internet Data Monitor for macOS, Windows & Linux*
 
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue?style=for-the-badge)](https://github.com/instax-dutta/packet-buddy)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue?style=for-the-badge)](https://github.com/instax-dutta/packet-buddy)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=for-the-badge&logo=python)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 
@@ -654,7 +654,7 @@ Built with:
 
 ## 🔍 Search Keywords
 
-`network monitor`, `bandwidth tracker`, `internet usage monitor`, `macOS data tracker`, `Windows bandwidth tool`, `data usage alert`, `ISP bill calculator`, `network traffic analysis`, `Python network utility`, `open source data tracker`, `real-time bandwidth monitor`, `network usage dashboard`, `data consumption tracker`, `network utility macOS`.
+`network monitor`, `bandwidth tracker`, `internet usage monitor`, `macOS data tracker`, `Windows bandwidth tool`, `Linux network monitor`, `data usage alert`, `ISP bill calculator`, `network traffic analysis`, `Python network utility`, `open source data tracker`, `real-time bandwidth monitor`, `network usage dashboard`, `data consumption tracker`, `network utility macOS`, `systemd network service`.
 
 ---
 

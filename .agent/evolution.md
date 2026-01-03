@@ -6,6 +6,7 @@ This document serves as a specialized guide for AI agents and LLMs tasked with e
 
 - **Backend:** FastAPI (Python 3.11+).
 - **Monitoring:** `psutil` + OS-specific gateway detection.
+- **Service Management:** `launchd` (macOS), `schtasks` (Windows), `systemd` (Linux).
 - **Storage:** SQLite (Local) with optional NeonDB (Cloud Sync).
 - **Frontend:** Vanilla JS/CSS (No heavy frameworks like React for core dashboard).
 
@@ -15,16 +16,17 @@ All updates must be pushed to the `main` branch. The `src/utils/updater.py` logi
 
 1. **Git Lifecycle:** It performs `git stash` and `git pull`.
 2. **Dependency Update:** If `requirements.txt` is modified, it automatically runs `pip install`.
-3. **Service Reload:** It identifies the OS and restarts the background daemon (`launchctl` on macOS, `schtasks` on Windows).
+3. **Service Reload:** It identifies the OS and restarts the background daemon (`launchctl` on macOS, `schtasks` on Windows, `systemctl` on Linux).
 
 **Rule:** Never break the git-based update flow. Avoid logic that requires manual intervention post-update.
 
 ## 💻 Cross-Platform Parity
 
-Always maintain a 1:1 behavioral match between macOS and Windows:
+Always maintain a 1:1 behavioral match between macOS, Windows, and Linux:
 
 - **macOS Detection:** Use `subprocess` with `route -n get default`.
 - **Windows Detection:** Use `subprocess` with `powershell` (Get-NetRoute).
+- **Linux Detection:** Use `subprocess` with `ip route show default`.
 - **Interface Mapping:** Always favor primary interface locking over global summing to prevent data inflation.
 
 ## 🎨 Aesthetic Integrity
