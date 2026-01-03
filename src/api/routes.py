@@ -13,6 +13,7 @@ from ..core.storage import storage
 from ..core.monitor import monitor
 from ..core.device import get_device_info
 from ..utils.formatters import format_usage_response
+from ..utils.cost_calculator import get_cost_breakdown, DEFAULT_COST_PER_GB_INR
 
 
 router = APIRouter(prefix="/api")
@@ -49,7 +50,40 @@ async def today():
     """Today's total usage."""
     bytes_sent, bytes_received = storage.get_today_usage()
     
-    return format_usage_response(bytes_sent, bytes_received)
+    response = format_usage_response(bytes_sent, bytes_received)
+    # Add cost information
+    cost_data = get_cost_breakdown(bytes_sent, bytes_received)
+    response["cost"] = cost_data
+    
+    return response
+
+
+@router.get("/cost")
+async def cost(cost_per_gb: float = Query(DEFAULT_COST_PER_GB_INR, description="Cost per GB in INR")):
+    """
+    Calculate cost for today's usage.
+    
+    Default: ₹7.50 per GB (average Indian mobile data cost)
+    """
+    bytes_sent, bytes_received = storage.get_today_usage()
+    total_bytes = bytes_sent + bytes_received
+    
+    cost_data = get_cost_breakdown(bytes_sent, bytes_received, cost_per_gb)
+    
+    return {
+        "usage": {
+            "bytes_sent": bytes_sent,
+            "bytes_received": bytes_received,
+            "total_bytes": total_bytes,
+            "gb_used": round(total_bytes / (1024 ** 3), 2)
+        },
+        "cost": cost_data,
+        "info": {
+            "cost_per_gb_inr": cost_per_gb,
+            "currency": "INR",
+            "note": "Based on average Indian mobile data costs (2026)"
+        }
+    }
 
 
 @router.get("/month")
