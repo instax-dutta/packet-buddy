@@ -4,6 +4,14 @@ First off, thank you for considering contributing to PacketBuddy! 🎉
 
 PacketBuddy is an open-source project, and we love to receive contributions from our community. There are many ways to contribute, from writing tutorials or blog posts, improving the documentation, submitting bug reports and feature requests, or writing code which can be incorporated into PacketBuddy itself.
 
+## 🤖 AI & Vibe Coding
+
+We fully embrace the era of AI-driven development. **Vibe coders and AI-assisted developers are highly welcomed to contribute!**
+
+PacketBuddy is designed to be **AI-ready at its best**. We maintain a hidden [`.agent/`](.agent/) directory containing high-level technical blueprints, architectural protocols, and maintenance guides specifically curated for LLMs and AI coding agents. This ensures that any AI tool you use—whether it's Cursor, Copilot, or a custom agent—has the immediate context needed to generate clean, compatible, and high-quality code.
+
+If you're contributing with an AI sidekick, point it to the `.agent/` folder for instant project mastery.
+
 ## 💡 Ways to Contribute
 
 ### 1. **Report Bugs** 🐛
