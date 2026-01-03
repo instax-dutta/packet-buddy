@@ -24,7 +24,17 @@ if (-not $pythonPath) {
     exit 1
 }
 
-Write-Host "✓ Python found: $pythonPath" -ForegroundColor Green
+# Use pythonw (windowless) if it exists in the same directory
+$pythonBaseDir = Split-Path -Parent $pythonPath
+$pythonwPath = Join-Path $pythonBaseDir "pythonw.exe"
+
+if (Test-Path $pythonwPath) {
+    $execPath = $pythonwPath
+    Write-Host "✓ Using headless Python: $execPath" -ForegroundColor Green
+} else {
+    $execPath = $pythonPath
+    Write-Host "✓ Using standard Python: $execPath" -ForegroundColor Green
+}
 
 # Create scheduled task to run PacketBuddy on startup
 $taskName = "PacketBuddy"
@@ -39,7 +49,7 @@ if ($existingTask) {
 
 # Create action
 $action = New-ScheduledTaskAction `
-    -Execute $pythonPath `
+    -Execute $execPath `
     -Argument "-m src.api.server" `
     -WorkingDirectory $projectPath
 

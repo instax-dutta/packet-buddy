@@ -177,9 +177,43 @@ def update(check_only: bool):
             else:
                 click.echo("\nℹ️  Please restart the service manually:")
                 click.echo("   macOS: launchctl kickstart -k gui/$(id -u)/com.packetbuddy.daemon")
-                click.echo("   Windows: schtasks /run /tn PacketBuddy\n")
+                click.echo("   Windows: schtasks /run /tn PacketBuddy")
+                click.echo("   Linux: systemctl --user restart packetbuddy.service\n")
         else:
             click.echo("❌ Update failed. Check logs for details.\n")
+
+
+@cli.group()
+def service():
+    """Manage the background monitoring service."""
+    pass
+
+
+@service.command(name="start")
+def service_start():
+    """Start the background service."""
+    from ..utils.updater import start_service
+    click.echo("🚀 Starting PacketBuddy background service...")
+    start_service()
+    click.echo("✅ Done. You can close this window now.")
+
+
+@service.command(name="stop")
+def service_stop():
+    """Stop the background service."""
+    from ..utils.updater import stop_service
+    click.echo("🛑 Stopping PacketBuddy background service...")
+    stop_service()
+    click.echo("✅ Done.")
+
+
+@service.command(name="restart")
+def service_restart():
+    """Restart the background service."""
+    from ..utils.updater import restart_service
+    click.echo("♻️  Restarting PacketBuddy background service...")
+    restart_service()
+    click.echo("✅ Done.")
 
 
 def main():

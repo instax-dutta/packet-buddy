@@ -166,7 +166,12 @@ REM Step 7: Create scheduled task
 echo [7/8] Setting up auto-start service...
 
 set "TASK_NAME=PacketBuddy"
+
+REM Detect pythonw.exe in venv for headless mode
 set "PYTHON_EXE=%PROJECT_DIR%\venv\Scripts\pythonw.exe"
+if not exist "%PYTHON_EXE%" (
+    set "PYTHON_EXE=%PROJECT_DIR%\venv\Scripts\python.exe"
+)
 
 REM Remove existing task if it exists
 schtasks /query /tn "%TASK_NAME%" >nul 2>&1

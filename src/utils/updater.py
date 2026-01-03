@@ -141,39 +141,40 @@ def perform_update() -> bool:
 
 def restart_service():
     """Restart the PacketBuddy service after update."""
+    stop_service()
+    start_service()
+
+
+def start_service():
+    """Start the PacketBuddy service."""
     import platform
-    
     system = platform.system()
-    
     try:
-        if system == "Darwin":  # macOS
-            subprocess.run(
-                ["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/com.packetbuddy.daemon"],
-                capture_output=True,
-                timeout=10
-            )
+        if system == "Darwin":
+            os.system(f"launchctl kickstart -p gui/{os.getuid()}/com.packetbuddy.daemon")
         elif system == "Windows":
-            # On Windows, stop the task if running then start it
-            subprocess.run(
-                ["schtasks", "/end", "/tn", "PacketBuddy"],
-                capture_output=True,
-                timeout=5
-            )
-            subprocess.run(
-                ["schtasks", "/run", "/tn", "PacketBuddy"],
-                capture_output=True,
-                timeout=10
-            )
+            subprocess.run(["schtasks", "/run", "/tn", "PacketBuddy"], capture_output=True)
         elif system == "Linux":
-            # On Linux (Systemd)
-            subprocess.run(
-                ["systemctl", "--user", "restart", "packetbuddy.service"],
-                capture_output=True,
-                timeout=10
-            )
-        logger.info("Service restarted successfully")
+            subprocess.run(["systemctl", "--user", "start", "packetbuddy.service"], capture_output=True)
+        logger.info("Service started successfully")
     except Exception as e:
-        logger.error(f"Failed to restart service: {e}")
+        logger.error(f"Failed to start service: {e}")
+
+
+def stop_service():
+    """Stop the PacketBuddy service."""
+    import platform
+    system = platform.system()
+    try:
+        if system == "Darwin":
+            subprocess.run(["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/com.packetbuddy.daemon"], capture_output=True)
+        elif system == "Windows":
+            subprocess.run(["schtasks", "/end", "/tn", "PacketBuddy"], capture_output=True)
+        elif system == "Linux":
+            subprocess.run(["systemctl", "--user", "stop", "packetbuddy.service"], capture_output=True)
+        logger.info("Service stopped successfully")
+    except Exception as e:
+        logger.error(f"Failed to stop service: {e}")
 
 
 def auto_update_check(force_restart: bool = True) -> bool:

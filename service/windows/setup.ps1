@@ -153,7 +153,12 @@ Write-Host ""
 Write-Host "[7/7] Setting up auto-start service..." -ForegroundColor Yellow
 
 $TaskName = "PacketBuddy"
-$PythonExe = "$ProjectDir\venv\Scripts\pythonw.exe"  # pythonw = no console window
+$pythonw = "$ProjectDir\venv\Scripts\pythonw.exe"
+if (Test-Path $pythonw) {
+    $PythonExe = $pythonw
+} else {
+    $PythonExe = "$ProjectDir\venv\Scripts\python.exe"
+}
 $WorkingDir = $ProjectDir
 
 # Remove existing task if it exists

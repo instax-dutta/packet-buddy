@@ -21,7 +21,17 @@ The application is designed to run as a "headless" daemon.
 
 ## ♻️ Service Control Manual
 
+### Unified CLI Management (Recommended)
+
+You can manage the service on any platform using:
+
+- **Start**: `pb service start`
+- **Stop**: `pb service stop`
+- **Restart**: `pb service restart`
+
 ### macOS (launchctl)
+
+...
 
 - **Status**: `launchctl list | grep packetbuddy`
 - **Restart**: `launchctl kickstart -k gui/$(id -u)/com.packetbuddy.daemon`
