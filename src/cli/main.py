@@ -137,6 +137,51 @@ def serve():
     run_server()
 
 
+@cli.command()
+@click.option("--check-only", is_flag=True, help="Only check for updates, don't apply")
+def update(check_only: bool):
+    """Check for and apply updates from GitHub."""
+    from ..utils.updater import check_for_updates, perform_update, restart_service
+    
+    click.echo("\n🔍 Checking for updates...")
+    
+    has_update, current, latest = check_for_updates()
+    
+    if not has_update:
+        if current and latest:
+            click.echo(f"✅ You're already on the latest version ({current[:7]})")
+        else:
+            click.echo("ℹ️  Auto-update not available (not a git repository)")
+        return
+    
+    click.echo(f"\n📦 Update available!")
+    click.echo(f"   Current: {current[:7]}")
+    click.echo(f"   Latest:  {latest[:7]}")
+    
+    if check_only:
+        click.echo("\nℹ️  Run 'pb update' to apply the update")
+        return
+    
+    if click.confirm("\n🚀 Apply update now?", default=True):
+        click.echo("\n⏳ Updating...")
+        
+        if perform_update():
+            click.echo("✅ Update completed successfully!")
+            click.echo("\nℹ️  Your data is safe - nothing was deleted")
+            
+            if click.confirm("\n🔄 Restart service now?", default=True):
+                click.echo("♻️  Restarting service...")
+                restart_service()
+                click.echo("✅ Service restarted!")
+                click.echo("\n🎉 All done! PacketBuddy is now up to date.\n")
+            else:
+                click.echo("\nℹ️  Please restart the service manually:")
+                click.echo("   macOS: launchctl kickstart -k gui/$(id -u)/com.packetbuddy.daemon")
+                click.echo("   Windows: schtasks /run /tn PacketBuddy\n")
+        else:
+            click.echo("❌ Update failed. Check logs for details.\n")
+
+
 def main():
     """Entry point for CLI."""
     cli()

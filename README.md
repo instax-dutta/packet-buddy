@@ -4,9 +4,10 @@
 
 ### *Ultra-Lightweight Network Usage Tracker*
 
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue?style=for-the-badge)](https://github.com)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue?style=for-the-badge)](https://github.com/instax-dutta/packet-buddy)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=for-the-badge&logo=python)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
+[![GitHub](https://img.shields.io/github/stars/instax-dutta/packet-buddy?style=for-the-badge)](https://github.com/instax-dutta/packet-buddy)
 
 **Track your internet usage across all your devices with a beautiful dashboard and zero configuration.**
 
@@ -38,14 +39,10 @@ Perfect for:
 
 ## ✨ Features
 
-<table>
-<tr>
-<td width="50%">
-
 ### 🎨 **Beautiful Dashboard**
 
 - Real-time upload/download speed
-- Daily, monthly, and lifetime stats
+- Daily, monthly, and lifetime stats  
 - Interactive charts with Chart.js
 - Dark theme optimized
 - Mobile-responsive design
@@ -57,13 +54,10 @@ Perfect for:
 - Anomaly filtering
 - Graceful crash recovery
 
-</td>
-<td width="50%">
-
 ### 🌐 **Multi-Device Support**
 
 - Track unlimited devices
-- Single NeonDB database
+- Single NeonDB database  
 - Device identification
 - Aggregate reporting
 
@@ -72,11 +66,7 @@ Perfect for:
 - One-command installation
 - Auto-starts on boot
 - Background daemon
-- Automatic updates
-
-</td>
-</tr>
-</table>
+- **Automatic updates** with `pb update`
 
 ---
 
@@ -107,7 +97,7 @@ Perfect for:
 
 ```bash
 # 1. Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/instax-dutta/packet-buddy.git
 cd packet-buddy
 
 # 2. Run the one-time setup script
@@ -122,14 +112,14 @@ open http://127.0.0.1:7373/dashboard
 
 ### Windows
 
-```powershell
+```bat
 # 1. Clone the repository (or download ZIP)
-git clone <your-repo-url>
+git clone https://github.com/instax-dutta/packet-buddy.git
 cd packet-buddy
 
-# 2. Run as Administrator
-cd service/windows
-.\setup.ps1
+# 2. Right-click setup.bat > Run as administrator  
+cd service\windows
+setup.bat
 
 # 3. Open the dashboard
 start http://127.0.0.1:7373/dashboard
@@ -154,10 +144,10 @@ start http://127.0.0.1:7373/dashboard
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/instax-dutta/packet-buddy.git
 cd packet-buddy
 
-# Or download and extract ZIP
+# Or download and extract ZIP from GitHub
 ```
 
 #### Step 2: Set Up Python Environment
@@ -250,23 +240,17 @@ The dashboard auto-refreshes:
 ### Command Line Interface
 
 ```bash
-# Make sure virtual environment is activated
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+# Using the 'pb' command (after setup):
+pb today      # Today's usage
+pb summary    # Lifetime stats
+pb month      # Monthly breakdown
+pb update     # Check for updates
+pb export     # Export data
 
-# View today's usage
+# Or using Python directly:
 python -m src.cli.main today
-
-# View this month's breakdown
-python -m src.cli.main month
-
-# View lifetime summary
 python -m src.cli.main summary
-
-# Export data to CSV
-python -m src.cli.main export --format csv --output mydata.csv
-
-# Start the dashboard server
-python -m src.cli.main serve
+python -m src.cli.main update --check-only
 ```
 
 ### Example CLI Output
@@ -623,9 +607,10 @@ poll_interval = 2  # or 5 for even lower usage
 
 ## 📚 Documentation
 
-- [Architecture Overview](ARCHITECTURE.md) - System design details
-- [Quick Start Guide](QUICKSTART.md) - Fast setup instructions
+- [Quick Start Guide](QUICKSTART.md) - Fast 3-minute setup
+- [Contributing Guide](CONTRIBUTING.md) - How to contribute
 - [API Documentation](#-api-reference) - HTTP API reference
+- [GitHub Repository](https://github.com/instax-dutta/packet-buddy) - Star us! ⭐
 
 ---
 
@@ -661,9 +646,10 @@ Built with:
 
 ## 💬 Support
 
-- 📫 **Issues**: [GitHub Issues](../../issues)
-- 💬 **Discussions**: [GitHub Discussions](../../discussions)
-- 📧 **Email**: <your-email@example.com>
+- 📫 **Issues**: [GitHub Issues](https://github.com/instax-dutta/packet-buddy/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/instax-dutta/packet-buddy/discussions)
+- ⭐ **Star us**: [GitHub](https://github.com/instax-dutta/packet-buddy)
+- 🔄 **Auto-Update**: Run `pb update` to get the latest features
 
 ---
 
