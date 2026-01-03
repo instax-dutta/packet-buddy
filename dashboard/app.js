@@ -138,6 +138,11 @@ async function loadTodayStats() {
         document.getElementById('today-download').textContent = data.human_readable.received;
         document.getElementById('today-total').textContent = data.human_readable.total;
 
+        // Display cost data
+        if (data.cost && data.cost.total) {
+            document.getElementById('today-cost').textContent = data.cost.total.cost_formatted;
+        }
+
         // Update pie chart
         updatePieChart(data.bytes_sent, data.bytes_received);
 
@@ -165,6 +170,12 @@ async function loadLifetimeStats() {
         document.getElementById('lifetime-upload').textContent = data.human_readable.sent;
         document.getElementById('lifetime-download').textContent = data.human_readable.received;
         document.getElementById('lifetime-total').textContent = data.human_readable.total;
+
+        // Display lifetime cost data
+        if (data.cost && data.cost.total) {
+            const costElem = document.getElementById('lifetime-cost');
+            if (costElem) costElem.textContent = data.cost.total.cost_formatted;
+        }
 
         // Calculate average daily usage (estimate)
         const totalBytes = data.total_bytes;

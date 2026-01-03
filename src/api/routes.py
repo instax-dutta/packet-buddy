@@ -121,7 +121,12 @@ async def summary():
     """Lifetime total usage."""
     bytes_sent, bytes_received = storage.get_lifetime_usage()
     
-    return format_usage_response(bytes_sent, bytes_received)
+    response = format_usage_response(bytes_sent, bytes_received)
+    # Add cost information
+    cost_data = get_cost_breakdown(bytes_sent, bytes_received)
+    response["cost"] = cost_data
+    
+    return response
 
 
 @router.get("/range")

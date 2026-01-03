@@ -1,7 +1,7 @@
 """Network usage monitoring with psutil."""
 
-import asyncio
 import psutil
+import subprocess
 from datetime import datetime
 from typing import Optional
 
@@ -24,11 +24,65 @@ class NetworkMonitor:
         # Buffer for batched writes
         self.pending_writes = []
         self.batch_interval = config.get("monitoring", "batch_write_interval", default=5)
+        
+        # Battery-aware settings
+        self.is_on_battery = False
+        self.base_poll_interval = self.poll_interval
+        self.base_batch_interval = self.batch_interval
     
+    def _get_primary_interface(self) -> Optional[str]:
+        """Try to detect the primary network interface with a default gateway."""
+        try:
+            # On macOS
+            result = subprocess.run(
+                ["route", "-n", "get", "default"], 
+                capture_output=True, text=True, timeout=2
+            )
+            for line in result.stdout.splitlines():
+                if "interface:" in line:
+                    return line.split(":")[1].strip()
+        except Exception:
+            pass
+        return None
+
     def _get_network_counters(self) -> tuple:
-        """Get current network I/O counters."""
-        counters = psutil.net_io_counters()
-        return counters.bytes_sent, counters.bytes_recv
+        """Get current network I/O counters, focusing on primary interface to avoid inflation."""
+        all_counters = psutil.net_io_counters(pernic=True)
+        primary = self._get_primary_interface()
+        
+        if primary and primary in all_counters:
+            counters = all_counters[primary]
+            return counters.bytes_sent, counters.bytes_recv
+            
+        # Fallback: Sum physical-looking interfaces
+        total_sent = 0
+        total_received = 0
+        ignore_prefixes = ('lo', 'utun', 'awdl', 'llw', 'anpi', 'gif', 'stf', 'bridge', 'ap')
+        
+        for name, counters in all_counters.items():
+            if any(name.lower().startswith(prefix) for prefix in ignore_prefixes):
+                continue
+            total_sent += counters.bytes_sent
+            total_received += counters.bytes_recv
+            
+        return total_sent, total_received
+        
+    def _check_battery_status(self):
+        """Check if we are on battery and adjust intervals."""
+        battery = psutil.sensors_battery()
+        if battery is not None:
+            on_battery = not battery.power_plugged
+            
+            if on_battery != self.is_on_battery:
+                self.is_on_battery = on_battery
+                if on_battery:
+                    # Save power: poll less often, batch more data
+                    self.poll_interval = self.base_poll_interval * 2
+                    self.batch_interval = self.base_batch_interval * 6
+                else:
+                    # Regain real-time performance on AC power
+                    self.poll_interval = self.base_poll_interval
+                    self.batch_interval = self.base_batch_interval
     
     async def start(self):
         """Start monitoring network usage."""
@@ -41,7 +95,17 @@ class NetworkMonitor:
         await asyncio.gather(
             self._monitor_loop(),
             self._batch_write_loop(),
+            self._battery_check_loop(),
         )
+
+    async def _battery_check_loop(self):
+        """Periodically check battery status."""
+        while self.running:
+            try:
+                self._check_battery_status()
+            except Exception as e:
+                print(f"Battery check error: {e}")
+            await asyncio.sleep(30)  # Check battery every 30s
     
     async def _monitor_loop(self):
         """Main monitoring loop."""
@@ -79,7 +143,7 @@ class NetworkMonitor:
                     self.pending_writes.append({
                         "bytes_sent": delta_sent,
                         "bytes_received": delta_received,
-                        "timestamp": datetime.utcnow()
+                        "timestamp": datetime.now()
                     })
                 
                 # Update last values

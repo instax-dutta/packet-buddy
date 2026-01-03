@@ -43,16 +43,17 @@ Perfect for:
 
 - Real-time upload/download speed
 - Daily, monthly, and lifetime stats  
+- **Indian Rupee (₹) Cost Tracking** (@ ₹7.50/GB)
 - Interactive charts with Chart.js
 - Dark theme optimized
-- Mobile-responsive design
 
 ### ⚙️ **Smart Monitoring**
 
-- Automatic counter reset detection
-- Sleep/resume handling
-- Anomaly filtering
-- Graceful crash recovery
+- **Smart Interface Detection**: Locks to primary gateway (e.g., Wi-Fi `en0`)
+- **Zero Data Inflation**: Ignores Apple/System overhead (AirDrop, Sidecar, etc.)
+- **Battery-Aware Logic**: Self-optimizes when unplugged to save power
+- **Local Time Accuracy**: Data resets at 12:00 AM in *your* timezone
+- **Automatic Failsafes**: Handles sleep, resume, and counter resets gracefully
 
 ### 🌐 **Multi-Device Support**
 
@@ -82,12 +83,12 @@ Perfect for:
 
 ### Dashboard Features
 
-- **⚡ Live Speed Monitor** - Real-time upload/download rates with progress bars
-- **📅 Today's Usage** - Current day statistics with visual progress ring
-- **🌐 Lifetime Totals** - All-time usage across all devices
-- **📊 Monthly Chart** - Day-by-day breakdown with bar graph
-- **🎯 Distribution Chart** - Upload vs download pie chart
-- **📈 Smart Insights** - Average daily usage, peak speeds, active devices
+- **⚡ Live Speed Monitor** - Real-time upload/download rates with premium status bars
+- **📅 Today's Usage** - Integrated **₹ Cost Tracking** with clean statistics
+- **🌐 Lifetime Totals** - Global usage and cumulative financial tracking
+- **📊 Monthly Chart** - Day-by-day interactive breakdown with Chart.js
+- **🎯 Distribution Chart** - Real-time Upload vs Download pie distribution
+- **📈 Smart Insights** - Average daily usage, peak speeds, and active devices
 
 ---
 

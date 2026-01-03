@@ -112,7 +112,7 @@ class Storage:
     def insert_usage(self, bytes_sent: int, bytes_received: int, timestamp: Optional[datetime] = None):
         """Insert a usage log entry."""
         if timestamp is None:
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now()
         
         with self.get_connection() as conn:
             cursor = conn.cursor()

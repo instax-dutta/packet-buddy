@@ -137,18 +137,10 @@
                     <span class="total-label">Total Today</span>
                     <span class="total-value gradient-text" id="today-total">0 B</span>
                 </div>
-                <div class="progress-ring">
-                    <svg width="60" height="60">
-                        <circle cx="30" cy="30" r="25" stroke="#2d3548" stroke-width="4" fill="none" />
-                        <circle id="today-progress" cx="30" cy="30" r="25" stroke="url(#gradient2)" stroke-width="4"
-                            fill="none" stroke-dasharray="157" stroke-dashoffset="157" transform="rotate(-90 30 30)" />
-                        <defs>
-                            <linearGradient id="gradient2">
-                                <stop offset="0%" stop-color="#6366f1" />
-                                <stop offset="100%" stop-color="#8b5cf6" />
-                            </linearGradient>
-                        </defs>
-                    </svg>
+                <div class="cost-row">
+                    <span class="cost-label">💰 Est. Cost</span>
+                    <span class="cost-value" id="today-cost">₹0.00</span>
+                    <span class="cost-note">@ ₹7.50/GB</span>
                 </div>
             </div>
 
@@ -175,6 +167,11 @@
                 <div class="total-row">
                     <span class="total-label">Grand Total</span>
                     <span class="total-value gradient-text" id="lifetime-total">0 B</span>
+                </div>
+                <div class="cost-row">
+                    <span class="cost-label">💰 Lifetime Cost</span>
+                    <span class="cost-value" id="lifetime-cost">₹0.00</span>
+                    <span class="cost-note">@ ₹7.50/GB</span>
                 </div>
             </div>
         </section>
