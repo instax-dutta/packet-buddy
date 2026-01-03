@@ -168,10 +168,10 @@ if ($existingTask) {
     Write-Host "→ Removed existing scheduled task" -ForegroundColor Yellow
 }
 
-# Create action
-$Action = New-ScheduledTaskAction -Execute $PythonExe `
-    -Argument "-m src.api.server" `
-    -WorkingDirectory $WorkingDir
+# Create action with internal PYTHONPATH setting
+$TaskCmd = "cmd /c cd /d `"$WorkingDir`" && set PYTHONPATH=$WorkingDir&& `"$PythonExe`" -m src.api.server"
+$Action = New-ScheduledTaskAction -Execute "cmd.exe" `
+    -Argument "/c $TaskCmd"
 
 # Create trigger (at logon)
 $Trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME

@@ -180,9 +180,9 @@ if !errorLevel! equ 0 (
     echo [INFO] Removed existing scheduled task
 )
 
-REM Create scheduled task with explicit working directory via cmd /c
-REM This ensures the python -m command finds the 'src' package
-set "TASK_CMD=cmd /c cd /d \"%PROJECT_DIR%\" && \"%PYTHON_EXE%\" -m src.api.server"
+REM Create scheduled task with explicit working directory and PYTHONPATH via cmd /c
+REM This ensures the python -m command finds the 'src' package correctly
+set "TASK_CMD=cmd /c cd /d \"%PROJECT_DIR%\" && set PYTHONPATH=%PROJECT_DIR%&& \"%PYTHON_EXE%\" -m src.api.server"
 schtasks /create /tn "%TASK_NAME%" /tr "%TASK_CMD%" /sc onlogon /rl highest /f >nul 2>&1
 
 if !errorLevel! equ 0 (
