@@ -52,6 +52,17 @@ class NetworkMonitor:
                 )
                 if result.returncode == 0 and result.stdout.strip():
                     return result.stdout.strip()
+            elif sys_platform == "Linux":
+                # On Linux
+                result = subprocess.run(
+                    ["ip", "route", "show", "default"],
+                    capture_output=True, text=True, timeout=2
+                )
+                for line in result.stdout.splitlines():
+                    if "default via" in line:
+                        parts = line.split()
+                        if "dev" in parts:
+                            return parts[parts.index("dev") + 1]
         except Exception as e:
             print(f"Error detecting primary interface: {e}")
         return None

@@ -1,0 +1,15 @@
+[Unit]
+Description=PacketBuddy Network Usage Tracker
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={{PROJECT_ROOT}}
+ExecStart={{PYTHON_PATH}} -m src.api.server
+Restart=always
+RestartSec=5
+StandardOutput=append:{{HOME}}/.packetbuddy/stdout.log
+StandardError=append:{{HOME}}/.packetbuddy/stderr.log
+
+[Install]
+WantedBy=default.target

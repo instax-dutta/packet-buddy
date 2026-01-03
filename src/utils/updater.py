@@ -164,6 +164,13 @@ def restart_service():
                 capture_output=True,
                 timeout=10
             )
+        elif system == "Linux":
+            # On Linux (Systemd)
+            subprocess.run(
+                ["systemctl", "--user", "restart", "packetbuddy.service"],
+                capture_output=True,
+                timeout=10
+            )
         logger.info("Service restarted successfully")
     except Exception as e:
         logger.error(f"Failed to restart service: {e}")
