@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from ..core.storage import storage
 from ..core.monitor import monitor
+from ..core.sync import sync
 from ..core.device import get_device_info
 from ..utils.formatters import format_usage_response
 from ..utils.cost_calculator import get_cost_breakdown, DEFAULT_COST_PER_GB_INR
@@ -22,6 +23,8 @@ router = APIRouter(prefix="/api")
 @router.get("/health")
 async def health():
     """Service health check."""
+    device_id, os_type, hostname = get_device_info()
+    
     # Combined local + global health
     device_count = 1
     if sync.enabled:
