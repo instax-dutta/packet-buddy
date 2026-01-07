@@ -12,8 +12,9 @@ def format_bytes(bytes_count: int) -> str:
     size = float(bytes_count)
     unit_index = 0
     
-    while size >= 1024 and unit_index < len(units) - 1:
-        size /= 1024
+    # Use 1000-base to match Bandwidth+, ISPs, and consumer billing standards
+    while size >= 1000 and unit_index < len(units) - 1:
+        size /= 1000
         unit_index += 1
     
     if unit_index == 0:

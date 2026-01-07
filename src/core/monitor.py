@@ -68,22 +68,31 @@ class NetworkMonitor:
         return None
 
     def _get_network_counters(self) -> tuple:
-        """Get current network I/O counters, focusing on primary interface to avoid inflation."""
+        """Get current network I/O counters, summing all physical interfaces for maximum accuracy."""
         all_counters = psutil.net_io_counters(pernic=True)
-        primary = self._get_primary_interface()
         
-        if primary and primary in all_counters:
-            counters = all_counters[primary]
-            return counters.bytes_sent, counters.bytes_recv
-            
-        # Fallback: Sum physical-looking interfaces
         total_sent = 0
         total_received = 0
-        ignore_prefixes = ('lo', 'utun', 'awdl', 'llw', 'anpi', 'gif', 'stf', 'bridge', 'ap')
+        
+        # Comprehensive list of internal/virtual interfaces to ignore
+        # These represent local system noise, not internet usage
+        ignore_prefixes = (
+            'lo', 'utun', 'awdl', 'llw', 'anpi', 'gif', 'stf', 'bridge', 
+            'ap', 'vboxnet', 'vmnet', 'docker', 'veth'
+        )
         
         for name, counters in all_counters.items():
-            if any(name.lower().startswith(prefix) for prefix in ignore_prefixes):
+            name_lower = name.lower()
+            
+            # Skip virtual/internal interfaces
+            if any(name_lower.startswith(prefix) for prefix in ignore_prefixes):
                 continue
+            
+            # Additional heuristic: skip interfaces traditionally known for local-only traffic
+            # or that are currently showing 0 activity (optimization)
+            if counters.bytes_sent == 0 and counters.bytes_recv == 0:
+                continue
+                
             total_sent += counters.bytes_sent
             total_received += counters.bytes_recv
             
