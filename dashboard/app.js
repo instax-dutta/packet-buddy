@@ -87,6 +87,13 @@ async function loadDeviceInfo() {
         const data = await response.json();
 
         document.getElementById('device-name').textContent = data.hostname;
+
+        // Update active device count if provided
+        if (data.device_count) {
+            const countElem = document.getElementById('device-count');
+            if (countElem) countElem.textContent = data.device_count;
+        }
+
         updateLastUpdate();
     } catch (error) {
         console.error('Failed to load device info:', error);
@@ -134,13 +141,20 @@ async function loadTodayStats() {
         const response = await fetch(`${API_BASE}/today`);
         const data = await response.json();
 
-        document.getElementById('today-upload').textContent = data.human_readable.sent;
-        document.getElementById('today-download').textContent = data.human_readable.received;
-        document.getElementById('today-total').textContent = data.human_readable.total;
+        // Use global data if available for total stitching
+        const displayData = data.global || data;
+
+        document.getElementById('today-upload').textContent = displayData.human_readable.sent;
+        document.getElementById('today-download').textContent = displayData.human_readable.received;
+        document.getElementById('today-total').textContent = displayData.human_readable.total;
+
+        // Update badge to show if we're seeing global or local
+        const todayHeader = document.querySelector('.stats-grid .card:nth-child(2) .badge, .stats-grid .card:nth-child(2) .time-badge');
+        if (todayHeader) todayHeader.textContent = data.global ? 'Total Network' : 'This Device';
 
         // Display cost data
-        if (data.cost && data.cost.total) {
-            document.getElementById('today-cost').textContent = data.cost.total.cost_formatted;
+        if (displayData.cost && displayData.cost.total) {
+            document.getElementById('today-cost').textContent = displayData.cost.total.cost_formatted;
         }
 
         // Update pie chart
@@ -167,14 +181,23 @@ async function loadLifetimeStats() {
         const response = await fetch(`${API_BASE}/summary`);
         const data = await response.json();
 
-        document.getElementById('lifetime-upload').textContent = data.human_readable.sent;
-        document.getElementById('lifetime-download').textContent = data.human_readable.received;
-        document.getElementById('lifetime-total').textContent = data.human_readable.total;
+        // Use global data if available for total stitching
+        const displayData = data.global || data;
+
+        document.getElementById('lifetime-upload').textContent = displayData.human_readable.sent;
+        document.getElementById('lifetime-download').textContent = displayData.human_readable.received;
+        document.getElementById('lifetime-total').textContent = displayData.human_readable.total;
+
+        // Update badge
+        const lifetimeBadge = document.querySelector('.stats-grid .card:nth-child(3) .badge');
+        if (lifetimeBadge) {
+            lifetimeBadge.textContent = data.global ? 'Total Network' : 'This Device';
+        }
 
         // Display lifetime cost data
-        if (data.cost && data.cost.total) {
+        if (displayData.cost && displayData.cost.total) {
             const costElem = document.getElementById('lifetime-cost');
-            if (costElem) costElem.textContent = data.cost.total.cost_formatted;
+            if (costElem) costElem.textContent = displayData.cost.total.cost_formatted;
         }
 
         // Calculate average daily usage (estimate)

@@ -12,6 +12,7 @@ from fastapi.responses import RedirectResponse
 from ..utils.config import config
 from ..core.monitor import monitor
 from ..core.sync import sync
+from ..utils.updater import auto_update_check
 from .routes import router
 
 
@@ -66,6 +67,20 @@ async def run_background_services():
         background_tasks.add(task)
         task.add_done_callback(background_tasks.discard)
     
+    # Run a one-time update check in the background after a short delay
+    async def delayed_update_check():
+        await asyncio.sleep(10)  # Wait for system to settle
+        try:
+            # Check for updates but don't force restart on startup
+            # as it might cause an infinite loop if not careful
+            auto_update_check(force_restart=False)
+        except Exception as e:
+            print(f"Startup update check failed: {e}")
+
+    update_task = asyncio.create_task(delayed_update_check())
+    background_tasks.add(update_task)
+    update_task.add_done_callback(background_tasks.discard)
+
     await asyncio.gather(*tasks, return_exceptions=True)
 
 

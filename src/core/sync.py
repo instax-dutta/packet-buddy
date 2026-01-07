@@ -180,6 +180,61 @@ class NeonSync:
                     await asyncio.sleep(self.retry_delay)
                 else:
                     raise
+
+    async def get_global_today_usage(self) -> Tuple[int, int]:
+        """Fetch today's total usage across all devices from NeonDB."""
+        if not self.enabled or not self.pool:
+            return 0, 0
+            
+        try:
+            today_date = date.today()
+            async with self.pool.acquire() as conn:
+                row = await conn.fetchrow("""
+                    SELECT 
+                        SUM(bytes_sent) as total_sent,
+                        SUM(bytes_received) as total_received
+                    FROM daily_aggregates
+                    WHERE date = $1
+                """, today_date)
+                
+                if row and row["total_sent"] is not None:
+                    return int(row["total_sent"]), int(row["total_received"])
+        except Exception as e:
+            print(f"Failed to fetch global today usage: {e}")
+        return 0, 0
+
+    async def get_global_lifetime_usage(self) -> Tuple[int, int]:
+        """Fetch lifetime total usage across all devices from NeonDB."""
+        if not self.enabled or not self.pool:
+            return 0, 0
+            
+        try:
+            async with self.pool.acquire() as conn:
+                row = await conn.fetchrow("""
+                    SELECT 
+                        SUM(bytes_sent) as total_sent,
+                        SUM(bytes_received) as total_received
+                    FROM monthly_aggregates
+                """)
+                
+                if row and row["total_sent"] is not None:
+                    return int(row["total_sent"]), int(row["total_received"])
+        except Exception as e:
+            print(f"Failed to fetch global lifetime usage: {e}")
+        return 0, 0
+
+    async def get_device_count(self) -> int:
+        """Get the count of distinct devices in the network."""
+        if not self.enabled or not self.pool:
+            return 1
+            
+        try:
+            async with self.pool.acquire() as conn:
+                count = await conn.fetchval("SELECT COUNT(*) FROM devices")
+                return count or 1
+        except Exception as e:
+            print(f"Failed to fetch device count: {e}")
+        return 1
     
     async def stop(self):
         """Stop sync service gracefully."""
