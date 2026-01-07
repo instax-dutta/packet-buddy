@@ -9,7 +9,8 @@ Always check the local logs first:
 - **macOS/Windows Paths**: `~/.packetbuddy/stdout.log` and `~/.packetbuddy/stderr.log`.
 - **Common Issues**:
   - `ModuleNotFoundError`: Usually means the `pip` sync failed during `pb update`. Solution: rerun `venv` installation.
-  - `0 B` usage: Primary interface detection failure. Check `monitor._get_primary_interface()` logs.
+  - `0 B` usage: Physical interface detection failure. Monitor now sums all interfaces; check `monitor._get_network_counters()` for active NIC list.
+  - Usage Mismatch: Ensure you aren't comparing Binary GB (1024) with PacketBuddy's **Decimal GB (1000)** standard.
 
 ## 2. Cross-Platform Runtime
 

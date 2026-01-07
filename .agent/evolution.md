@@ -9,7 +9,7 @@ This document serves as a specialized guide for AI agents and LLMs tasked with e
 - **Service Management:** Unified CLI (`pb service`) abstraction over `launchd` (macOS), `schtasks` (Windows), and `systemd` (Linux).
 - **Storage:** SQLite (Local) with optional NeonDB (Cloud Sync).
 - **Runners:** Headless `pythonw.exe` for Windows background tasks.
-- **Frontend:** Vanilla JS/CSS (No heavy frameworks like React for core dashboard).
+- **Frontend:** Vanilla JS/CSS with custom favicon and glassmorphism UI.
 
 ## 🚀 The `pb update` Lifecycle
 
@@ -17,7 +17,8 @@ All updates must be pushed to the `main` branch. The `src/utils/updater.py` logi
 
 1. **Git Lifecycle:** It performs `git stash` and `git pull`.
 2. **Dependency Update:** If `requirements.txt` is modified, it automatically runs `pip install`.
-3. **Service Reload:** It identifies the OS and restarts the background daemon (`launchctl` on macOS, `schtasks` on Windows, `systemctl` on Linux).
+3. **Startup Auto-Check:** The service performs a silent version check 10s after every system startup.
+4. **Service Reload:** It identifies the OS and restarts the background daemon (`launchctl` on macOS, `schtasks` on Windows, `systemctl` on Linux).
 
 **Rule:** Never break the git-based update flow. Avoid logic that requires manual intervention post-update.
 
@@ -28,7 +29,8 @@ Always maintain a 1:1 behavioral match between macOS, Windows, and Linux:
 - **macOS Detection:** Use `subprocess` with `route -n get default`.
 - **Windows Detection:** Use `subprocess` with `powershell` (Get-NetRoute).
 - **Linux Detection:** Use `subprocess` with `ip route show default`.
-- **Interface Mapping:** Always favor primary interface locking over global summing to prevent data inflation.
+- **Gigabyte Standard:** Use **Decimal (1000-base)** for all `format_bytes` calls to match ISP caps and pro-tools like Bandwidth+.
+- **Interface Tracking:** Use **Inclusive Summing** (sum all physical-looking interfaces) instead of locking to a primary interface to handle network switching gracefully.
 
 ## 🎨 Aesthetic Integrity
 

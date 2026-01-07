@@ -6,16 +6,20 @@ This document details the internal lifecycle of metrics within PacketBuddy. Use 
 
 1. **Ingestion (`src/core/monitor.py`)**:
     - Polls `psutil.net_io_counters(pernic=True)` every `poll_interval` (default 1s).
-    - Locks to the primary interface detected via `_get_primary_interface()`.
+    - Performs **Inclusive Summing**: Sums activity across all physical-looking interfaces while filtering out system noise (loopback, AirDrop, internal tunnels).
+    - Standardizes on **Decimal (1000-base)** Gigabytes for ISP and ISP-metering accuracy.
     - Calculates the delta between the current and last sample.
 2. **Buffering**:
     - Deltas are stored in a memory list (`self.pending_writes`).
     - This minimizes SQLite write lock contention.
 3. **Persistence (`src/core/storage.py`)**:
     - Every `batch_write_interval` (default 5s), the buffer is flushed to the `usage_logs` table.
-    - Triggers update `daily_aggregates` and `monthly_aggregates` in the same transaction.
-4. **Consumption (`src/api/routes.py`)**:
-    - FastAPI endpoints query the **aggregate** tables for speed, rather than recalculating from raw logs.
+    - Updates `daily_aggregates` and `monthly_aggregates` in the same transaction.
+4. **Cloud Integration (`src/core/sync.py`)**:
+    - Periodically replicates local logs to NeonDB.
+    - Retrieves Network-wide global aggregates for the "Stitched" dashboard view.
+5. **Consumption (`src/api/routes.py`)**:
+    - FastAPI endpoints query both local and global aggregates to provide a unified network view.
 
 ## 2. Cross-Platform Runtime
 
