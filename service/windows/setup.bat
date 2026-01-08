@@ -164,39 +164,76 @@ echo.
 
 REM Step 7: Create scheduled task
 echo [7/8] Setting up auto-start service...
+echo.
 
 set "TASK_NAME=PacketBuddy"
 
-REM Detect pythonw.exe in venv for headless mode
-set "PYTHON_EXE=%PROJECT_DIR%\venv\Scripts\pythonw.exe"
-if not exist "%PYTHON_EXE%" (
-    set "PYTHON_EXE=%PROJECT_DIR%\venv\Scripts\python.exe"
+REM Verify launcher script exists
+set "LAUNCHER_SCRIPT=%PROJECT_DIR%\run-service.bat"
+if not exist "%LAUNCHER_SCRIPT%" (
+    color 0C
+    echo [ERROR] Launcher script not found: %LAUNCHER_SCRIPT%
+    echo.
+    echo This is a critical error. Please report this issue.
+    pause
+    exit /b 1
 )
 
 REM Remove existing task if it exists
 schtasks /query /tn "%TASK_NAME%" >nul 2>&1
 if !errorLevel! equ 0 (
-    schtasks /delete /tn "%TASK_NAME%" /f >nul
-    echo [INFO] Removed existing scheduled task
+    echo [INFO] Removing existing scheduled task...
+    schtasks /delete /tn "%TASK_NAME%" /f >nul 2>&1
+    if !errorLevel! neq 0 (
+        echo [WARN] Could not remove existing task (this is usually OK)
+    )
 )
 
 REM Create scheduled task using the dedicated launcher script
-REM The launcher script properly sets up PYTHONPATH and working directory
-set "LAUNCHER_SCRIPT=%PROJECT_DIR%\run-service.bat"
+echo [INFO] Creating scheduled task...
 schtasks /create /tn "%TASK_NAME%" /tr "\"%LAUNCHER_SCRIPT%\"" /sc onlogon /rl highest /f >nul 2>&1
 
 if !errorLevel! equ 0 (
-    echo [OK] Scheduled task created
+    echo [OK] Scheduled task created successfully
 ) else (
-    echo [WARN] Could not create scheduled task
+    color 0E
+    echo.
+    echo [ERROR] Failed to create scheduled task!
+    echo.
+    echo This usually means:
+    echo   1. You didn't run as Administrator
+    echo   2. Task Scheduler service is disabled
+    echo.
+    echo Please:
+    echo   1. Close this window
+    echo   2. Right-click setup.bat
+    echo   3. Select "Run as administrator"
+    echo   4. Try again
+    echo.
+    pause
+    exit /b 1
+)
+
+REM Verify task was created
+schtasks /query /tn "%TASK_NAME%" >nul 2>&1
+if !errorLevel! neq 0 (
+    color 0C
+    echo [ERROR] Task was created but cannot be found!
+    echo This is unusual. Please check Task Scheduler manually.
+    pause
+    exit /b 1
 )
 
 REM Start the task immediately
+echo [INFO] Starting service...
 schtasks /run /tn "%TASK_NAME%" >nul 2>&1
 if !errorLevel! equ 0 (
     echo [OK] Service start signal sent
 ) else (
-    echo [WARN] Could not send start signal to service
+    color 0E
+    echo [WARN] Could not send start signal
+    echo The task exists but failed to start immediately.
+    echo It will start on next login.
 )
 echo.
 
@@ -234,12 +271,17 @@ if not "!ADD_PATH!"=="n" if not "!ADD_PATH!"=="N" (
 echo.
 
 REM Test the service
-echo Testing service...
-echo Waiting for service to start...
-timeout /t 5 /nobreak >nul
+echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo Testing Service Startup
+echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo.
+echo Waiting for service to start (this may take 10-15 seconds)...
+timeout /t 8 /nobreak >nul
 
 set "SUCCESS=0"
-for /l %%i in (1,1,6) do (
+set "ATTEMPTS=0"
+for /l %%i in (1,1,12) do (
+    set /a ATTEMPTS=%%i
     curl -s http://127.0.0.1:7373/api/health >nul 2>&1
     if !errorLevel! equ 0 (
         set "SUCCESS=1"
@@ -251,11 +293,44 @@ for /l %%i in (1,1,6) do (
 
 :ServiceRunning
 echo.
+echo.
 if "!SUCCESS!"=="1" (
-    echo [OK] Service is running!
+    color 0A
+    echo ✅ SUCCESS! Service is running!
+    echo.
+    echo Dashboard is now available at: http://127.0.0.1:7373/dashboard
 ) else (
-    echo [WARN] Service may need a moment to start
-    echo Check Task Scheduler for status
+    color 0C
+    echo.
+    echo ❌ WARNING: Service did not start!
+    echo.
+    echo Attempted !ATTEMPTS! times but could not connect to http://127.0.0.1:7373
+    echo.
+    echo This usually means:
+    echo   1. Port 7373 is already in use by another application
+    echo   2. Python dependencies are missing
+    echo   3. Virtual environment has issues
+    echo   4. Firewall is blocking Python
+    echo.
+    echo 🔍 To diagnose the issue:
+    echo.
+    echo   1. Check error logs:
+    echo      type %USERPROFILE%\.packetbuddy\stderr.log
+    echo.
+    echo   2. Try running manually to see the error:
+    echo      cd "%PROJECT_DIR%"
+    echo      venv\Scripts\activate
+    echo      python -m src.api.server
+    echo.
+    echo   3. Check if port 7373 is in use:
+    echo      netstat -ano ^| findstr :7373
+    echo.
+    echo   4. View full troubleshooting guide:
+    echo      https://github.com/instax-dutta/packet-buddy/blob/main/docs/WINDOWS_SERVICE_NOT_STARTING.md
+    echo.
+    echo The service will auto-start on next login, but please check the logs!
+    echo.
+    pause
 )
 echo.
 
