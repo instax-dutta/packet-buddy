@@ -23,7 +23,7 @@ class NetworkMonitor:
         
         # Buffer for batched writes
         self.pending_writes = []
-        self.batch_interval = config.get("monitoring", "batch_write_interval", default=5)
+        self.batch_interval = config.get("monitoring", "batch_write_interval", default=30)
         
         # Battery-aware settings
         self.is_on_battery = False

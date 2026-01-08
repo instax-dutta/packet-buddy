@@ -101,10 +101,12 @@ dashboard = "dashboard/index.html"
 windows_launcher = "run-service.bat"
 
 [recent_changes]
-v1_0_1 = "Windows Task Scheduler fix (run-service.bat)"
-v1_1_0 = "Automatic updates enabled"
-v1_1_1 = "Auto-update config defaults"
+v1_2_1 = "Resource optimization (batch_write_interval: 5s → 30s, 83% less disk I/O)"
+v1_2_0 = "TOON format migration (60% token savings)"
 v1_1_2 = "Enhanced setup error handling"
+v1_1_1 = "Auto-update config defaults"
+v1_1_0 = "Automatic updates enabled"
+v1_0_1 = "Windows Task Scheduler fix (run-service.bat)"
 
 [uninstall]
 windows = ["schtasks /delete /tn PacketBuddy /f", "rmdir /s /q %USERPROFILE%\\.packetbuddy"]

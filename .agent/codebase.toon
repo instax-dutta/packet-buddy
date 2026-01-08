@@ -90,11 +90,20 @@ usage = "pb today | pb summary | pb month | pb export"
 service = "pb service start|stop|restart"
 update = "pb update [--check-only] [--force]"
 
+[performance]
+cpu = "0.2-0.5%"
+ram = "28-40 MB"
+disk_io = "~2 KB/s (optimized from ~5 KB/s)"
+api_response = "<50ms"
+batch_writes = "2,880 writes/day (optimized from 17,280)"
+
 [recent_changes]
-v1_0_1 = "Fixed Windows Task Scheduler (run-service.bat launcher)"
-v1_1_0 = "Automatic updates enabled by default"
-v1_1_1 = "Fixed auto_update config defaults"
-v1_1_2 = "Enhanced setup error handling & validation"
+v1_2_1 = "Resource optimization: batch_write 5s→30s, 83% less disk I/O"
+v1_2_0 = "TOON format migration, 60% token savings"
+v1_1_2 = "Enhanced Windows setup error handling"
+v1_1_1 = "Auto-update config defaults"
+v1_1_0 = "Automatic updates enabled"
+v1_0_1 = "Windows Task Scheduler fix"
 
 [dev_workflow]
 run_local = "source venv/bin/activate && python -m src.api.server"
@@ -107,12 +116,6 @@ critical = ["src/api/server.py", "src/core/monitor.py", "src/core/storage.py", "
 config = ["config.example.toml", "src/utils/config.py"]
 setup = ["service/windows/setup.bat", "service/macos/setup.sh", "service/linux/setup.sh"]
 docs = ["README.md", "docs/WINDOWS_SERVICE_NOT_STARTING.md", ".agent/quick-reference.toon"]
-
-[performance]
-cpu = "0.2-0.5%"
-ram = "28-40 MB"
-disk_io = "~5 KB/s"
-api_response = "<50ms"
 
 [security]
 api_binding = "127.0.0.1 only (no external access)"

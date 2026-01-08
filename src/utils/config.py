@@ -26,7 +26,7 @@ class Config:
         default_config = {
             "monitoring": {
                 "poll_interval": 1,  # seconds
-                "batch_write_interval": 5,  # seconds
+                "batch_write_interval": 30,  # seconds (optimized for resource efficiency)
                 "max_delta_bytes": 1_000_000_000,  # 1GB/s threshold for anomaly detection
             },
             "sync": {
