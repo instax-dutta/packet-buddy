@@ -130,7 +130,7 @@ macos = "git clone → ./service/macos/setup.sh → open http://127.0.0.1:7373/d
 linux = "git clone → bash service/linux/setup.sh → xdg-open http://127.0.0.1:7373/dashboard"
 
 [for_llms]
-read_first = [".agent/quick-reference.toon", ".agent/README.md"]
+read_first = [".agent/quick-reference.toon", "README.md"]
 for_setup_help = "README.md"
 for_troubleshooting = [".agent/quick-reference.toon", "docs/WINDOWS_SERVICE_NOT_STARTING.md"]
 for_architecture = ".agent/architecture.toon"

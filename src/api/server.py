@@ -20,7 +20,7 @@ from .routes import router
 app = FastAPI(
     title="PacketBuddy API",
     description="Ultra-lightweight network usage tracking",
-    version="1.0.0"
+    version="1.3.0"
 )
 
 # Enable CORS

@@ -154,9 +154,9 @@ Users can manually access the dashboard by:
 | `docs/WINDOWS_TASK_SCHEDULER_FIX.md` | ✅ NEW | Detailed fix documentation |
 | `docs/WINDOWS_FIX_SUMMARY.md` | ✅ NEW | Quick summary (this file) |
 | `README.md` | ✅ UPDATED | LLM-friendly rewrite with troubleshooting section |
-| `.agent/codebase.md` | ✅ NEW | Complete codebase overview for AI assistants |
-| `.agent/architecture.md` | ✅ UPDATED | System architecture documentation |
-| `.agent/quick-reference.md` | ✅ NEW | Quick reference for common issues |
+| `.agent/codebase.toon` | ✅ NEW | Complete codebase overview for AI assistants |
+| `.agent/architecture.toon` | ✅ UPDATED | System architecture documentation |
+| `.agent/quick-reference.toon` | ✅ NEW | Quick reference for common issues |
 
 ---
 
@@ -357,9 +357,9 @@ For your user (Jambu):
 All documentation has been updated to be **LLM-friendly**:
 
 - ✅ **README.md** - Complete rewrite with step-by-step guides
-- ✅ **.agent/codebase.md** - Comprehensive codebase overview
-- ✅ **.agent/architecture.md** - System architecture details
-- ✅ **.agent/quick-reference.md** - Quick troubleshooting guide
+- ✅ **.agent/codebase.toon** - Comprehensive codebase overview
+- ✅ **.agent/architecture.toon** - System architecture details
+- ✅ **.agent/quick-reference.toon** - Quick troubleshooting guide
 
 Users can now paste the repo link into ChatGPT/Gemini/Claude and get accurate setup assistance.
 
