@@ -3,7 +3,7 @@
 
 [meta]
 project = "PacketBuddy"
-version = "1.2.1"
+version = "1.3.0"
 updated = "2026-01-08"
 type = "network_monitoring_tool"
 platforms = ["Windows", "macOS", "Linux"]
@@ -98,6 +98,7 @@ api_response = "<50ms"
 batch_writes = "2,880 writes/day (optimized from 17,280)"
 
 [recent_changes]
+v1_3_0 = "Windows setup UX overhaul - stress-free, beautiful UI"
 v1_2_1 = "Resource optimization: batch_write 5s→30s, 83% less disk I/O"
 v1_2_0 = "TOON format migration, 60% token savings"
 v1_1_2 = "Enhanced Windows setup error handling"
