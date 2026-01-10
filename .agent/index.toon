@@ -1,7 +1,7 @@
 # PacketBuddy - AI Assistant Navigation Index (TOON)
 
 [meta]
-updated = "2026-01-08"
+updated = "2026-01-10"
 format = "TOON (Token Optimized Object Notation)"
 purpose = "Help AI assistants navigate PacketBuddy codebase efficiently"
 
@@ -31,13 +31,15 @@ performance = "→ architecture.toon [performance] + quick-reference.toon [confi
 
 [project_summary]
 name = "PacketBuddy"
-version = "1.1.2"
+version = "1.3.1"
 type = "Network usage monitoring tool"
 platforms = ["Windows", "macOS", "Linux"]
 tech = ["Python 3.11+", "FastAPI", "SQLite", "psutil", "Chart.js"]
 resources = "<40MB RAM, <0.5% CPU"
 
 [recent_changes]
+v1_3_1 = "64-bit macOS accuracy fix + Windows watchdog"
+v1_3_0 = "Windows setup UX overhaul"
 v1_1_2 = "Enhanced Windows setup error handling"
 v1_1_1 = "Auto-update config defaults"
 v1_1_0 = "Automatic updates enabled"

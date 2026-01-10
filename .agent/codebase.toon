@@ -3,15 +3,15 @@
 
 [meta]
 project = "PacketBuddy"
-version = "1.3.0"
-updated = "2026-01-08"
+version = "1.3.1"
+updated = "2026-01-10"
 type = "network_monitoring_tool"
 platforms = ["Windows", "macOS", "Linux"]
 
 [summary]
 desc = "Ultra-lightweight network usage tracker. <40MB RAM, <0.5% CPU. Runs as background service, provides web dashboard."
 tech_stack = ["Python 3.11+", "FastAPI", "SQLite", "psutil", "Chart.js"]
-key_features = ["Real-time monitoring", "Auto-updates", "Cloud sync (optional)", "Web dashboard", "CLI interface"]
+key_features = ["Real-time monitoring", "Auto-updates", "Cloud sync (optional)", "Web dashboard", "CLI interface", "Crash recovery watchdog"]
 
 [structure]
 root = "packet-buddy/"
@@ -24,7 +24,7 @@ cli = {main="CLI commands (pb today, pb update, etc)"}
 utils = {config="TOML config", formatters="Data formatting", updater="Auto-update"}
 
 [structure.service]
-windows = ["setup.bat", "install-service.ps1", "run-service.bat (launcher)"]
+windows = ["setup.bat", "install-service.ps1", "run-service.bat (launcher)", "watchdog.bat", "setup-autostart.ps1"]
 macos = ["setup.sh", "com.packetbuddy.plist (LaunchAgent)"]
 linux = ["setup.sh", "packetbuddy.service.template (systemd)"]
 
@@ -33,17 +33,17 @@ files = ["index.html", "app.js", "style.css"]
 tech = "Vanilla JS + Chart.js, no build process"
 
 [data_flow]
-input = "psutil.net_io_counters() → bytes_sent/received"
+input = "(psutil | netstat -ib on macOS) → bytes_sent/received"
 processing = "Monitor calculates delta → validates → filters anomalies"
 storage = "Batch write to SQLite every 30s"
 sync = "Upload to NeonDB every 60s (optional)"
-output = "FastAPI serves data → Dashboard displays"
+output = "FastAPI serves data (including buffered usage) → Dashboard displays"
 
 [architecture.monitor]
 file = "src/core/monitor.py"
 method = "Async polling loop"
 interval = "1 second (configurable)"
-features = ["Counter reset detection", "Anomaly filtering (>1GB/s)", "Auto interface detection"]
+features = ["Counter reset detection", "Anomaly filtering (>1GB/s)", "Auto interface detection", "64-bit netstat counters (macOS)"]
 
 [architecture.storage]
 file = "src/core/storage.py"
@@ -67,7 +67,8 @@ defaults = {enabled=true, check_on_startup=true, auto_apply=true, auto_restart=t
 mechanism = "Task Scheduler"
 launcher = "run-service.bat (sets PYTHONPATH, runs pythonw.exe)"
 setup = "service/windows/setup.bat (requires Admin)"
-recent_fix = "v1.0.1 - Fixed PYTHONPATH issue, v1.1.2 - Enhanced error handling"
+watchdog = "watchdog.bat - Automatic crash recovery (every 30s)"
+recent_fix = "v1.3.1 - 64-bit macOS counters & Windows watchdog recovery"
 
 [common_issues]
 service_not_starting = {symptoms="ERR_CONNECTION_REFUSED", causes=["Port 7373 in use", "Missing dependencies", "Venv issues", "Firewall"], solution="Run manually: python -m src.api.server, check logs"}
@@ -98,6 +99,7 @@ api_response = "<50ms"
 batch_writes = "2,880 writes/day (optimized from 17,280)"
 
 [recent_changes]
+v1_3_1 = "64-bit macOS accuracy fix (netstat) + Windows crash recovery watchdog"
 v1_3_0 = "Windows setup UX overhaul - stress-free, beautiful UI"
 v1_2_1 = "Resource optimization: batch_write 5s→30s, 83% less disk I/O"
 v1_2_0 = "TOON format migration, 60% token savings"
@@ -115,8 +117,8 @@ add_endpoint = "Edit src/api/routes.py → Add storage method → Test"
 [key_files]
 critical = ["src/api/server.py", "src/core/monitor.py", "src/core/storage.py", "run-service.bat (Windows)"]
 config = ["config.example.toml", "src/utils/config.py"]
-setup = ["service/windows/setup.bat", "service/macos/setup.sh", "service/linux/setup.sh"]
-docs = ["README.md", "docs/WINDOWS_SERVICE_NOT_STARTING.md", ".agent/quick-reference.toon"]
+setup = ["service/windows/setup.bat", "service/macos/setup.sh", "watchdog.bat", "setup-autostart.ps1"]
+docs = ["README.md", "docs/WINDOWS_SERVICE_NOT_STARTING.md", "docs/WINDOWS_WATCHDOG.md", ".agent/quick-reference.toon"]
 
 [security]
 api_binding = "127.0.0.1 only (no external access)"

@@ -3,7 +3,7 @@
 [meta]
 doc_type = "quick_reference"
 purpose = "Fast troubleshooting and common issues"
-updated = "2026-01-08"
+updated = "2026-01-10"
 
 [what_is_packetbuddy]
 desc = "Ultra-lightweight network usage tracker"
@@ -101,6 +101,7 @@ dashboard = "dashboard/index.html"
 windows_launcher = "run-service.bat"
 
 [recent_changes]
+v1_3_1 = "64-bit macOS accuracy fix (netstat) + Windows crash recovery watchdog"
 v1_3_0 = "Windows setup UX overhaul - stress-free, one-click, beautiful UI"
 v1_2_1 = "Resource optimization (batch_write_interval: 5s → 30s, 83% less disk I/O)"
 v1_2_0 = "TOON format migration (60% token savings)"
@@ -129,7 +130,7 @@ security = ["API: 127.0.0.1 only", "NeonDB: TLS encryption", "Credentials: envir
 [faq]
 q1 = {q="Does it slow down internet?", a="No. Only reads statistics, doesn't intercept traffic."}
 q2 = {q="Can I track multiple devices?", a="Yes, with optional NeonDB cloud sync (free tier)."}
-q3 = {q="How accurate is it?", a="Very accurate - reads kernel-level network statistics."}
+q3 = {q="How accurate is it?", a="Extremely accurate. v1.3.1 uses native 64-bit netstat counters on macOS to fix psutil overflow bugs and ensure 100% precision."}
 q4 = {q="Does it work offline?", a="Yes, local tracking works 100% offline. Cloud sync requires internet."}
 q5 = {q="How do I export data?", a="pb export --format csv OR visit /api/export?format=csv"}
 

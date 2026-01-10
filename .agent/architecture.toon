@@ -2,7 +2,7 @@
 
 [meta]
 doc_type = "architecture"
-updated = "2026-01-08"
+updated = "2026-01-10"
 
 [layers]
 presentation = ["Web Dashboard (HTML/CSS/JS)", "CLI (Python argparse)"]
@@ -13,9 +13,9 @@ data = ["Storage (SQLite)", "Sync (NeonDB)", "Config (TOML)"]
 [components.monitor]
 file = "src/core/monitor.py"
 pattern = "Observer"
-tech = "psutil + asyncio"
-flow = "psutil → calculate delta → validate → filter → storage"
-features = {reset_detection="Skip on counter reset", anomaly_filter=">1GB/s rejected", auto_interface="Detects active NIC"}
+tech = "psutil + asyncio + native netstat (macOS)"
+flow = "psutil/netstat → calculate delta → validate → filter → storage"
+features = {reset_detection="Skip on counter reset", anomaly_filter=">1GB/s rejected", auto_interface="Detects active NIC", macos_64bit="Uses netstat -ib for 64-bit accuracy"}
 
 [components.storage]
 file = "src/core/storage.py"
@@ -51,7 +51,7 @@ response_format = "{bytes_sent, bytes_received, total_bytes, human_readable{sent
 
 [data_flow.write]
 steps = [
-  "psutil.net_io_counters()",
+  "psutil.net_io_counters() or netstat -ib (macOS)",
   "Monitor calculates delta",
   "Validate (no resets, no anomalies)",
   "Add to write buffer",
@@ -76,6 +76,7 @@ steps = [
 [service.windows]
 mechanism = "Task Scheduler"
 flow = "User Login → Task Scheduler → run-service.bat → Sets PYTHONPATH → pythonw.exe -m src.api.server"
+watchdog = "watchdog.bat → Monitors API /health every 30s → Restarts main task if down"
 fix_v1_0_1 = "Created run-service.bat to set PYTHONPATH (was missing)"
 fix_v1_1_2 = "Enhanced error handling, validates each step"
 
@@ -130,4 +131,4 @@ zero_config = "Auto-detects interface, sensible defaults, one-command install"
 privacy = "Minimal data collection, local storage first"
 cross_platform = "Same codebase, platform-specific installers"
 lightweight = "<40MB RAM, <0.5% CPU, minimal disk I/O"
-resilient = "Handles interruptions, survives sleep/resume, auto-recovery"
+resilient = "Handles interruptions, survives sleep/resume, auto-recovery (Windows Watchdog)"
