@@ -171,9 +171,14 @@ async function loadTodayStats() {
         if (todayHeader) todayHeader.textContent = data.global ? 'Total Network' : 'This Device';
 
         // Update peak speed from server today stats if available
-        if (displayData.peak_speed && displayData.peak_speed > peakSpeed) {
-            peakSpeed = displayData.peak_speed;
-            document.getElementById('peak-speed').textContent = displayData.human_readable.peak_speed;
+        if (displayData.peak_speed !== undefined && displayData.peak_speed !== null) {
+            // Always sync with server's stored peak speed (handles page refresh)
+            peakSpeed = Math.max(peakSpeed, displayData.peak_speed);
+            if (displayData.human_readable && displayData.human_readable.peak_speed) {
+                document.getElementById('peak-speed').textContent = displayData.human_readable.peak_speed;
+            } else if (peakSpeed > 0) {
+                document.getElementById('peak-speed').textContent = formatBytes(peakSpeed) + '/s';
+            }
         }
 
         // Display cost data
