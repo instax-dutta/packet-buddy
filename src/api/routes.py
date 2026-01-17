@@ -15,6 +15,7 @@ from ..core.sync import sync
 from ..core.device import get_device_info
 from ..utils.formatters import format_usage_response
 from ..utils.cost_calculator import get_cost_breakdown, DEFAULT_COST_PER_GB_INR
+from ..version import __version__
 
 
 router = APIRouter(prefix="/api")
@@ -32,6 +33,7 @@ async def health():
 
     return {
         "status": "running",
+        "version": __version__,
         "device_id": device_id,
         "os_type": os_type,
         "hostname": hostname,

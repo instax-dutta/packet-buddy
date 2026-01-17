@@ -697,6 +697,12 @@ body {
     font-size: 0.75rem;
 }
 
+.release-date {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
     .charts-grid {

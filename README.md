@@ -4,7 +4,7 @@
 
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue?style=flat-square)](https://github.com/instax-dutta/packet-buddy)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python)](https://python.org)
-[![Version](https://img.shields.io/badge/version-1.3.1-brightgreen?style=flat-square)](https://github.com/instax-dutta/packet-buddy/releases)
+[![Version](https://img.shields.io/badge/version-1.3.2-brightgreen?style=flat-square)](https://github.com/instax-dutta/packet-buddy/releases)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 ---

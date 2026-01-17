@@ -88,6 +88,24 @@ async function loadDeviceInfo() {
 
         document.getElementById('device-name').textContent = data.hostname;
 
+        // Update version info
+        if (data.version) {
+            const versionElem = document.getElementById('app-version');
+            if (versionElem) versionElem.textContent = 'v' + data.version;
+
+            // Show release date
+            const releaseDateElem = document.getElementById('release-date');
+            if (releaseDateElem && data.timestamp) {
+                const releaseDate = new Date(data.timestamp);
+                const formattedDate = releaseDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                releaseDateElem.textContent = ` • Released ${formattedDate}`;
+            }
+        }
+
         // Update active device count if provided
         if (data.device_count) {
             const countElem = document.getElementById('device-count');
