@@ -33,7 +33,7 @@ def live():
 @cli.command()
 def today():
     """Show today's usage."""
-    bytes_sent, bytes_received = storage.get_today_usage()
+    bytes_sent, bytes_received, peak_speed = storage.get_today_usage()
     total = bytes_sent + bytes_received
     
     table = [

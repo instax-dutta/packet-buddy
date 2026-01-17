@@ -85,7 +85,7 @@ async def cost(cost_per_gb: float = Query(DEFAULT_COST_PER_GB_INR, description="
     
     Default: ₹7.50 per GB (average Indian mobile data cost)
     """
-    bytes_sent, bytes_received = storage.get_today_usage()
+    bytes_sent, bytes_received, peak_speed = storage.get_today_usage()
     total_bytes = bytes_sent + bytes_received
     
     cost_data = get_cost_breakdown(bytes_sent, bytes_received, cost_per_gb)
