@@ -67,26 +67,39 @@ async def run_background_services():
         background_tasks.add(task)
         task.add_done_callback(background_tasks.discard)
     
-    # Run automatic update check in the background after a short delay
-    async def delayed_update_check():
+    # Run automatic update check in the background periodically
+    async def periodic_update_check():
         # Check if auto-update is enabled in config
         auto_update_enabled = config.get("auto_update", "enabled", default=True)
         check_on_startup = config.get("auto_update", "check_on_startup", default=True)
         auto_apply = config.get("auto_update", "auto_apply", default=True)
         auto_restart = config.get("auto_update", "auto_restart", default=True)
+        check_interval_hours = config.get("auto_update", "check_interval_hours", default=6)
         
-        if not auto_update_enabled or not check_on_startup:
+        if not auto_update_enabled:
             print("ℹ️  Automatic updates disabled in config")
             return
         
-        await asyncio.sleep(10)  # Wait for system to settle
-        try:
-            # Automatically check and apply updates based on config
-            auto_update_check(force_restart=auto_restart, auto_apply=auto_apply)
-        except Exception as e:
-            print(f"Automatic update check failed: {e}")
+        # Initial check on startup (after settling period)
+        if check_on_startup:
+            await asyncio.sleep(10)  # Wait for system to settle
+            try:
+                print("🔍 Checking for updates on startup...")
+                auto_update_check(force_restart=auto_restart, auto_apply=auto_apply)
+            except Exception as e:
+                print(f"Startup update check failed: {e}")
+        
+        # Periodic update checks (every N hours)
+        check_interval_seconds = check_interval_hours * 3600
+        while True:
+            await asyncio.sleep(check_interval_seconds)
+            try:
+                print(f"🔍 Periodic update check (every {check_interval_hours}h)...")
+                auto_update_check(force_restart=auto_restart, auto_apply=auto_apply)
+            except Exception as e:
+                print(f"Periodic update check failed: {e}")
 
-    update_task = asyncio.create_task(delayed_update_check())
+    update_task = asyncio.create_task(periodic_update_check())
     background_tasks.add(update_task)
     update_task.add_done_callback(background_tasks.discard)
 

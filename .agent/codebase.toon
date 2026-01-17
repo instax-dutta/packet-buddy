@@ -3,7 +3,7 @@
 
 [meta]
 project = "PacketBuddy"
-version = "1.3.2"
+version = "1.3.3"
 updated = "2026-01-17"
 type = "network_monitoring_tool"
 platforms = ["Windows", "macOS", "Linux"]
@@ -61,7 +61,7 @@ endpoints = ["/api/health", "/api/live", "/api/today", "/api/month", "/api/summa
 trigger = "10s after service start"
 process = "git fetch → git pull → pip install -r requirements.txt → restart service"
 config = "~/.packetbuddy/config.toml [auto_update] section"
-defaults = {enabled=true, check_on_startup=true, auto_apply=true, auto_restart=true}
+defaults = {enabled=true, check_on_startup=true, check_interval_hours=6, auto_apply=true, auto_restart=true}
 
 [windows_service]
 mechanism = "Task Scheduler"
@@ -99,6 +99,7 @@ api_response = "<50ms"
 batch_writes = "2,880 writes/day (optimized from 17,280)"
 
 [recent_changes]
+v1_3_3 = "Periodic Auto-Updates - Checks for updates every 6 hours automatically"
 v1_3_2 = "Persistent Peak Speed Counter - Tracks highest speed across sessions with SQLite backfill"
 v1_3_1 = "64-bit macOS accuracy fix (netstat) + Windows crash recovery watchdog"
 v1_3_0 = "Windows setup UX overhaul - stress-free, beautiful UI"

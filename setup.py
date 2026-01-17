@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="packetbuddy",
-    version="1.3.2",
+    version="1.3.3",
     description="Ultra-lightweight cross-platform network usage tracker",
     author="PacketBuddy Team",
     python_requires=">=3.11",

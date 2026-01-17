@@ -23,6 +23,7 @@ pool_size = 5                  # Connection pool size for NeonDB
 [auto_update]
 enabled = true                 # Enable automatic updates (recommended)
 check_on_startup = true        # Check for updates when service starts
+check_interval_hours = 6       # Check for updates every N hours (default: 6)
 auto_apply = true              # Automatically apply updates when available
 auto_restart = true            # Automatically restart service after update
 
