@@ -4,8 +4,25 @@
 
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue?style=flat-square)](https://github.com/instax-dutta/packet-buddy)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python)](https://python.org)
-[![Version](https://img.shields.io/badge/version-1.3.2-brightgreen?style=flat-square)](https://github.com/instax-dutta/packet-buddy/releases)
+[![Version](https://img.shields.io/badge/version-1.4.0-brightgreen?style=flat-square)](https://github.com/instax-dutta/packet-buddy/releases)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+
+---
+
+## 🎉 What's New in v1.4.0
+
+### Export System Overhaul
+- **🎉 Year Wrap-Up Export**: Beautiful HTML reports perfect for sharing your internet usage year-end summary
+- **🤖 TOON Format**: New token-optimized export format (~60% fewer tokens) for LLM analysis
+- **📊 Enhanced Exports**: All formats now include peak speeds and comprehensive statistics
+- **📥 Multiple Formats**: CSV, JSON, HTML, and TOON - choose what works best for you
+
+### Bug Fixes & Improvements
+- **⚡ Peak Speed Persistence**: Fixed dashboard peak speed resetting on page refresh
+- **📈 Better Analytics**: Added 5 new storage methods for detailed statistics
+- **🎨 Dashboard Update**: New "Year Wrap-Up" button for one-click export
+
+[See full changelog](RELEASE_NOTES_v1.4.0.md)
 
 ---
 
@@ -39,6 +56,7 @@ PacketBuddy is an **ultra-lightweight network monitoring tool** that tracks your
 - 🌐 **Multi-device tracking** across Windows, macOS, and Linux
 - 📱 **Verifying ISP bills** with accurate bandwidth measurements
 - 🎓 **Network troubleshooting** and identifying data-heavy applications
+- 🎉 **Year-end wrap-ups** with beautiful HTML reports and LLM-optimized exports
 
 ### Why PacketBuddy?
 
@@ -57,9 +75,11 @@ PacketBuddy is an **ultra-lightweight network monitoring tool** that tracks your
 
 - Real-time upload/download speed monitoring
 - Daily, monthly, and lifetime statistics
+- **Persistent peak speed tracking** (no more resets on refresh!)
 - Indian Rupee (₹) cost tracking (@ ₹7.50/GB)
 - Interactive charts with Chart.js
 - Dark theme optimized for readability
+- **One-click year wrap-up export** 🎉
 
 ### ⚙️ Smart Monitoring
 
@@ -604,15 +624,57 @@ pb service status
 ### Data Export
 
 ```bash
-# Export to CSV
+# Export to CSV (with peak speeds)
 pb export --format csv --output data.csv
 
-# Export to JSON
+# Export to JSON (comprehensive statistics)
 pb export --format json --output data.json
 
-# Export LLM-friendly summary
+# Export beautiful HTML year wrap-up
+pb export --format html --output wrap_up.html
+
+# Export TOON format (Token Optimized - ~60% fewer tokens for LLMs)
 pb export --llm
 ```
+
+**New in v1.4.0:** All exports now include peak speed data and comprehensive statistics!
+
+#### Export Formats Comparison
+
+| Format | Best For | Features |
+|--------|----------|----------|
+| **CSV** | Spreadsheet analysis | Daily data with peak speeds |
+| **JSON** | Programmatic use | Complete statistics, human-readable values |
+| **HTML** | Sharing & presentation | Beautiful year wrap-up, Spotify-style |
+| **TOON** | LLM analysis | Token-optimized format, ~60% fewer tokens |
+
+#### TOON Format (New!)
+
+PacketBuddy now exports data in **TOON (Token Optimized Object Notation)** format for LLM analysis:
+
+```toml
+[totals]
+bytes_sent = 48547545088
+bytes_received = 132923842560
+total_bytes = 181471387648
+human = {sent="45.2 GB", received="123.8 GB", total="169.0 GB"}
+
+[year_2026]
+bytes_sent = 12345678
+bytes_received = 98765432
+total_bytes = 111111110
+days = 22
+
+[records]
+peak_speed_bps = 13107200
+peak_speed_human = "12.5 MB/s"
+```
+
+**Benefits:**
+- 🚀 ~60% fewer tokens than markdown
+- 📊 All data preserved in compact format
+- 🤖 Optimized for ChatGPT, Claude, and other LLMs
+- 📝 Human-readable values included
 
 ### Updates
 
