@@ -1,0 +1,52 @@
+# PacketBuddy - AI Assistant Navigation Index (TOON)
+
+[meta]
+updated = "2026-01-28"
+format = "TOON (Token Optimized Object Notation)"
+purpose = "Help AI assistants navigate PacketBuddy codebase efficiently"
+version = "1.4.0"
+
+[start_here]
+read_first = "This file (index.toon) is the entry point for AI agents"
+then = "quick-reference.toon (for user questions/troubleshooting)"
+deep_dive = "codebase.toon or architecture.toon (for development)"
+
+[decision_tree]
+user_has_issue = "→ quick-reference.toon → [issue_*]"
+how_to_use = "→ quick-reference.toon → [cli_commands] [api_endpoints]"
+how_it_works = "→ codebase.toon → [data_flow] [architecture]"
+why_designed = "→ architecture.toon → [design_principles] [tech_stack_rationale]"
+add_feature = "→ codebase.toon [dev_workflow] + architecture.toon [components]"
+performance = "→ architecture.toon [performance] + quick-reference.toon [config_example]"
+
+[project_summary]
+name = "PacketBuddy"
+version = "1.4.0"
+type = "Network usage monitoring tool"
+platforms = ["Windows", "macOS", "Linux"]
+tech = ["Python 3.11+", "FastAPI", "SQLite", "NeonDB (Cloud Sync)", "psutil", "Chart.js"]
+resources = "<40MB RAM, <0.3% CPU"
+
+[v1_4_0_features]
+export_system = "Full overhaul - CSV, JSON, HTML (Year Wrap-Up), and TOON formats"
+peak_speed = "Persistent tracking across sessions with SQLite backfill"
+toon_format = "Token Optimized Object Notation for LLMs (~60% token reduction)"
+dashboard = "Year Wrap-Up button + visual improvements"
+
+[files_in_docs]
+index = {file="index.toon", desc="This file - navigation guide"}
+quick_ref = {file="quick-reference.toon", desc="Common issues, troubleshooting, commands"}
+codebase = {file="codebase.toon", desc="Complete codebase overview, development guide"}
+architecture = {file="architecture.toon", desc="System design, technical decisions"}
+
+[for_ai_assistants]
+instruction_1 = "ALWAYS check .docs/index.toon first to understand codebase state"
+instruction_2 = "USE .docs/*.toon files to avoid high token consumption of markdown/code"
+instruction_3 = "MATCH the existing patterns described in codebase.toon"
+token_savings = "~60% reduction vs markdown documentation"
+
+[onboarding]
+windows = "Run setup.bat in root (requires Admin)"
+unix = "Run ./setup.sh in root"
+config = "Located at ~/.packetbuddy/config.toml"
+dashboard = "http://127.0.0.1:7373/dashboard"

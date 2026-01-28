@@ -1,0 +1,59 @@
+# PacketBuddy Quick Reference - TOON Format
+
+[meta]
+version = "1.4.0"
+updated = "2026-01-28"
+
+[onboarding_shortcut]
+windows = "Run setup.bat in root (as Admin)"
+unix = "Run ./setup.sh in root"
+verify = "http://127.0.0.1:7373/dashboard"
+
+[cli_commands]
+today = "pb today (Usage stats)"
+summary = "pb summary (Lifetime stats)"
+month = "pb month (Current month breakdown)"
+export_csv = "pb export --format csv"
+export_json = "pb export --format json"
+export_html = "pb export --format html (Year Wrap-up)"
+export_llm = "pb export --llm (TOON format)"
+service_start = "pb service start"
+service_stop = "pb service stop"
+service_restart = "pb service restart"
+update = "pb update (Self-update)"
+
+[api_endpoints]
+base = "http://127.0.0.1:7373/api"
+health = "/health"
+live = "/live (Real-time speed)"
+today = "/today"
+month = "/month?month=YYYY-MM"
+export = "/export?format=csv|json|html|llm"
+
+[issue_1_windows_not_starting]
+symptom = "Dashboard won't load, API connection refused"
+solution = "1. Check if pythonw.exe is running in Task Manager. 2. Run setup.bat as Administrator. 3. Check logs in %USERPROFILE%\\.packetbuddy\\stderr.log"
+
+[issue_2_old_version_showing]
+symptom = "Dashboard shows v1.3.3 but code is v1.4.0"
+cause = "Python module caching"
+fix = "Run force-restart.bat in project root"
+
+[issue_3_port_in_use]
+symptom = "Error: [Errno 10048] Only one usage of each socket address"
+fix = "Update port in ~/.packetbuddy/config.toml [api] section"
+
+[config_keys]
+location = "Windows: %USERPROFILE%\\.packetbuddy\\config.toml | Unix: ~/.packetbuddy/config.toml"
+poll_interval = "seconds (default 1)"
+batch_write_interval = "seconds (default 30)"
+sync_enabled = "true/false"
+neondb_url = "postgresql connection string"
+
+[security_note]
+secrets = "NEVER push config.toml with neondb credentials. It is gitignored by default."
+binding = "Service only accepts local connections (127.0.0.1)"
+
+[for_ai_agents]
+docs_index = ".docs/index.toon"
+token_optimized = "Use .docs/*.toon for codebase context"

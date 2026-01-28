@@ -1,0 +1,63 @@
+# PacketBuddy Codebase - TOON Format
+
+[meta]
+project = "PacketBuddy"
+version = "1.4.0"
+updated = "2026-01-28"
+type = "network_monitoring_tool"
+platforms = ["Windows", "macOS", "Linux"]
+
+[summary]
+desc = "Ultra-lightweight network usage tracker. <40MB RAM, <0.3% CPU."
+tech_stack = ["Python 3.11+", "FastAPI", "SQLite", "NeonDB (Optional Sync)", "psutil", "Chart.js"]
+v1_4_0_overhaul = "New Export System (HTML Wrap-up, TOON LLM-friendly), Persistent Peak Speed, NeonDB Sync improvements"
+
+[structure]
+root = "packet-buddy/"
+main_dirs = ["src/", "dashboard/", "service/", "docs/", ".docs/"]
+
+[structure.src]
+api = {server="FastAPI server.py", routes="routes.py endpoints", version="version.py dynamic read"}
+core = {monitor="Network polling (psutil)", storage="SQLite & Peak Speed", sync="NeonDB cloud sync", device="Unique ID generation"}
+cli = {main="CLI interface (pb today, pb export, etc)"}
+utils = {config="TOML loader", formatters="Unit conversion", updater="Auto-check & Apply"}
+
+[structure.service]
+windows = ["setup.bat", "run-service.bat (launcher)", "watchdog.bat (crash recovery)"]
+unix = ["setup.sh", "systemd/LaunchAgent templates"]
+
+[data_flow]
+capture = "psutil.net_io_counters() -> Delta calculation"
+validation = "Max 1GB/s filter -> Battery-aware polling (2s on batt, 1s on AC)"
+storage = "Batch write to SQLite every 30s -> Peak speed persistent update"
+sync = "Background task uploads to NeonDB (PostgreSQL) every 60s"
+api = "FastAPI serves JSON/HTML/TOON exports on port 7373"
+
+[v1_4_0_exports]
+csv = "Spreadsheet friendly daily stats"
+json = "Programmatic comprehensive metrics"
+html = "Spotify-style 'Year Wrap-Up' beautiful report"
+toon = "Token Optimized Object Notation (~60% smaller than markdown)"
+
+[peak_speed_logic]
+method = "Storage.update_peak_speed(new_speed)"
+persistence = "Saved to 'daily_aggregates' table in SQLite"
+backfill = "Service identifies missing peak speed rows and backfills from usage logs"
+
+[decision_tree_for_agents]
+question = "index.toon -> quick-reference.toon"
+bug_fix = "codebase.toon -> [structure.src] -> [dev_workflow]"
+feature = "architecture.toon [design_principles] -> codebase.toon [dev_workflow]"
+deployment = "architecture.toon [deployment_checks]"
+
+[dev_workflow]
+setup = "python -m venv venv && pip install -r requirements.txt"
+run = "python -m src.api.server"
+test_api = "curl http://127.0.0.1:7373/api/health"
+logs = "%USERPROFILE%\\.packetbuddy\\stderr.log"
+
+[for_llms]
+read_first = ".docs/index.toon"
+troubleshooting = ".docs/quick-reference.toon"
+deep_dive = [".docs/codebase.toon", ".docs/architecture.toon"]
+token_tip = "Use .toon files for architecture/codebase context to save thousands of tokens"

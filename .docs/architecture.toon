@@ -1,0 +1,45 @@
+# PacketBuddy Architecture - TOON Format
+
+[meta]
+version = "1.4.0"
+updated = "2026-01-28"
+
+[design_principles]
+weight = "Ultra-lightweight (<40MB RAM)"
+privacy = "Local-first, no PII, no browsing history"
+latency = "FastAPI endpoints <50ms"
+resilience = "Auto-restarts, battery-aware, counter reset handling"
+
+[tech_stack_rationale]
+python = "Cross-platform, rich library support (psutil, FastAPI)"
+sqlite = "Zero-config, serverless, atomic writes"
+neondb = "Serverless PostgreSQL for multi-device sync with free tier"
+fastapi = "High performance, async native, auto docs"
+chart_js = "Client-side rendering, zero build-step required"
+
+[system_components]
+monitor = "src/core/monitor.py - The heartbeat. psutil -> delta -> buffer"
+storage = "src/core/storage.py - The memory. SQLite + peak speed persistence"
+sync = "src/core/sync.py - The bridge. Local -> NeonDB sync"
+api = "src/api/server.py - The interface. RESTful endpoints"
+updater = "src/utils/updater.py - The evolution. Git-based auto-updates"
+
+[v1_4_0_evolution]
+exports = "Decoupled report generation from core logic. Added TOON and HTML templates."
+peak_speed = "Stateful tracking. High-water mark stored in SQLite aggregates."
+versioning = "Dynamic VERSION file reading to prevent Python module caching issues."
+
+[network_efficiency]
+polling = "1s on AC, 2s on Battery"
+batching = "30s local write, 60s cloud sync"
+anomalies = "Filters >1GB/s spikes (usually system wake/sleep artifacts)"
+
+[deployment_checks]
+privileges = "Task Scheduler requires highestPrivileges for network access"
+binding = "127.0.0.1 (Localhost only) for security"
+venv = "Isolated Python environment to avoid system conflicts"
+
+[ai_read_map]
+entry = ".docs/index.toon"
+reference = ".docs/quick-reference.toon"
+technical = [".docs/codebase.toon", ".docs/architecture.toon"]
