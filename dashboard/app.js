@@ -36,11 +36,15 @@ function setupEventListeners() {
     });
 
     document.getElementById('prev-month').addEventListener('click', () => {
+        console.log('Previous month clicked');
+        currentMonth.setDate(1); // Enforce first day
         currentMonth.setMonth(currentMonth.getMonth() - 1);
         loadMonthlyData();
     });
 
     document.getElementById('next-month').addEventListener('click', () => {
+        console.log('Next month clicked');
+        currentMonth.setDate(1); // Enforce first day
         currentMonth.setMonth(currentMonth.getMonth() + 1);
         loadMonthlyData();
     });
