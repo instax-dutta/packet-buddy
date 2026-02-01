@@ -5,6 +5,7 @@ const API_BASE = 'http://127.0.0.1:7373/api';
 let monthlyChart = null;
 let pieChart = null;
 let currentMonth = new Date();
+currentMonth.setDate(1); // Fix: Set to 1st of month to avoid rollover bugs when navigating from 31st
 let peakSpeed = 0;
 let refreshIntervals = [];
 

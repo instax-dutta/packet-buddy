@@ -31,7 +31,7 @@ class Config:
             },
             "sync": {
                 "enabled": True,
-                "interval": 30,  # seconds
+                "interval": 300,  # seconds (5 mins for Neon DB scaling)
                 "retry_delay": 5,  # seconds
                 "max_retries": 3,
             },

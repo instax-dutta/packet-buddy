@@ -134,39 +134,55 @@ class NeonSync:
                 async with self.pool.acquire() as conn:
                     async with conn.transaction():
                         # Batch insert usage logs
+                        # Batch insert usage logs
                         sync_data = []
+                        daily_aggs = {}
+                        monthly_aggs = {}
+
                         for log in logs:
                             ts = datetime.fromisoformat(log["timestamp"])
                             sync_data.append((log["device_id"], ts, log["bytes_sent"], log["bytes_received"]))
+                            
+                            # Aggregate for daily stats
+                            log_date = ts.date()
+                            d_key = (log["device_id"], log_date)
+                            if d_key not in daily_aggs:
+                                daily_aggs[d_key] = {"sent": 0, "received": 0}
+                            daily_aggs[d_key]["sent"] += log["bytes_sent"]
+                            daily_aggs[d_key]["received"] += log["bytes_received"]
+
+                            # Aggregate for monthly stats
+                            month_str = log_date.strftime("%Y-%m")
+                            m_key = (log["device_id"], month_str)
+                            if m_key not in monthly_aggs:
+                                monthly_aggs[m_key] = {"sent": 0, "received": 0}
+                            monthly_aggs[m_key]["sent"] += log["bytes_sent"]
+                            monthly_aggs[m_key]["received"] += log["bytes_received"]
 
                         await conn.executemany("""
                             INSERT INTO usage_logs (device_id, timestamp, bytes_sent, bytes_received)
                             VALUES ($1, $2, $3, $4)
                         """, sync_data)
                         
-                        # Update aggregates in NeonDB
-                        for log in logs:
-                            ts = datetime.fromisoformat(log["timestamp"])
-                            log_date = ts.date()
-                            
-                            # Daily aggregate
+                        # Update daily aggregates (Batch)
+                        for (device_id, log_date), stats in daily_aggs.items():
                             await conn.execute("""
                                 INSERT INTO daily_aggregates (device_id, date, bytes_sent, bytes_received)
                                 VALUES ($1, $2, $3, $4)
                                 ON CONFLICT (device_id, date) DO UPDATE SET
                                     bytes_sent = daily_aggregates.bytes_sent + EXCLUDED.bytes_sent,
                                     bytes_received = daily_aggregates.bytes_received + EXCLUDED.bytes_received
-                            """, log["device_id"], log_date, log["bytes_sent"], log["bytes_received"])
+                            """, device_id, log_date, stats["sent"], stats["received"])
                             
-                            # Monthly aggregate
-                            month_str = log_date.strftime("%Y-%m")
+                        # Update monthly aggregates (Batch)
+                        for (device_id, month_str), stats in monthly_aggs.items():
                             await conn.execute("""
                                 INSERT INTO monthly_aggregates (device_id, month, bytes_sent, bytes_received)
                                 VALUES ($1, $2, $3, $4)
                                 ON CONFLICT (device_id, month) DO UPDATE SET
                                     bytes_sent = monthly_aggregates.bytes_sent + EXCLUDED.bytes_sent,
                                     bytes_received = monthly_aggregates.bytes_received + EXCLUDED.bytes_received
-                            """, log["device_id"], month_str, log["bytes_sent"], log["bytes_received"])
+                            """, device_id, month_str, stats["sent"], stats["received"])
                 
                 # Mark as synced
                 log_ids = [log["id"] for log in logs]
