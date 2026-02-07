@@ -8,9 +8,7 @@
     <title>PacketBuddy Dashboard</title>
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
     <!-- Chart.js via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -22,8 +20,16 @@
 </head>
 
 <body>
-    <!-- Background gradient -->
-    <div class="bg-gradient"></div>
+    <!-- Background glass blobs -->
+    <div class="blob-c">
+        <div class="shape-blob"></div>
+        <div class="shape-blob one"></div>
+        <div class="shape-blob two"></div>
+        <div class="shape-blob three"></div>
+        <div class="shape-blob four"></div>
+        <div class="shape-blob five"></div>
+        <div class="shape-blob six"></div>
+    </div>
 
     <div class="container">
         <!-- Header -->
@@ -31,15 +37,9 @@
             <div class="logo">
                 <div class="logo-icon">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="20" cy="20" r="18" stroke="url(#gradient1)" stroke-width="2.5" />
-                        <path d="M20 10v20M10 20h20" stroke="url(#gradient1)" stroke-width="2.5"
+                        <circle cx="20" cy="20" r="18" stroke="hsl(var(--primary))" stroke-width="3" />
+                        <path d="M20 12v16M12 20h16" stroke="hsl(var(--accent))" stroke-width="3"
                             stroke-linecap="round" />
-                        <defs>
-                            <linearGradient id="gradient1" x1="0" y1="0" x2="40" y2="40">
-                                <stop offset="0%" stop-color="#6366f1" />
-                                <stop offset="100%" stop-color="#8b5cf6" />
-                            </linearGradient>
-                        </defs>
                     </svg>
                 </div>
                 <div class="logo-text">
@@ -88,14 +88,14 @@
 
         <!-- Enhanced Live Stats -->
         <section class="stats-grid">
-            <div class="card live-card gradient-border">
-                <div class="card-glow"></div>
+            <div class="card">
+
                 <div class="card-header">
                     <div class="header-left">
                         <span class="card-icon">⚡</span>
                         <h3>Live Speed</h3>
                     </div>
-                    <div class="pulse-indicator"></div>
+
                 </div>
                 <div class="stat-row">
                     <div class="stat">
@@ -120,8 +120,8 @@
                 </div>
             </div>
 
-            <div class="card gradient-border">
-                <div class="card-glow"></div>
+            <div class="card">
+
                 <div class="card-header">
                     <div class="header-left">
                         <span class="card-icon">📅</span>
@@ -142,7 +142,7 @@
                 </div>
                 <div class="total-row">
                     <span class="total-label">Total Today</span>
-                    <span class="total-value gradient-text" id="today-total">0 B</span>
+                    <span class="total-value" id="today-total">0 B</span>
                 </div>
                 <div class="cost-row">
                     <span class="cost-label">💰 Est. Cost</span>
@@ -151,8 +151,8 @@
                 </div>
             </div>
 
-            <div class="card gradient-border">
-                <div class="card-glow"></div>
+            <div class="card">
+
                 <div class="card-header">
                     <div class="header-left">
                         <span class="card-icon">🌐</span>
@@ -173,7 +173,7 @@
                 </div>
                 <div class="total-row">
                     <span class="total-label">Grand Total</span>
-                    <span class="total-value gradient-text" id="lifetime-total">0 B</span>
+                    <span class="total-value" id="lifetime-total">0 B</span>
                 </div>
                 <div class="cost-row">
                     <span class="cost-label">💰 Lifetime Cost</span>
@@ -186,8 +186,8 @@
         <!-- Charts Grid -->
         <section class="charts-grid">
             <!-- Monthly Chart -->
-            <div class="card chart-card gradient-border">
-                <div class="card-glow"></div>
+            <div class="card chart-card">
+
                 <div class="card-header">
                     <div class="header-left">
                         <span class="card-icon">📊</span>
@@ -213,8 +213,8 @@
             </div>
 
             <!-- Distribution Charts -->
-            <div class="card chart-card gradient-border">
-                <div class="card-glow"></div>
+            <div class="card chart-card">
+
                 <div class="card-header">
                     <div class="header-left">
                         <span class="card-icon">🎯</span>
@@ -291,6 +291,8 @@
                 <span>Last updated: <span id="last-update">Never</span></span>
             </div>
         </footer>
+    </div>
+
     </div>
 
     <script src="app.js?v=20260201_2"></script>

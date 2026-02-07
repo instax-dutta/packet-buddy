@@ -286,29 +286,38 @@ function formatMonthDisplay(date) {
 
 // Initialize charts
 function initCharts() {
+    const primaryTeal = 'hsl(170, 70%, 42%)';
+    const accentPink = 'hsl(340, 60%, 60%)';
+    const textColor = 'hsl(200, 25%, 90%)';
+    const mutedColor = 'hsl(200, 15%, 55%)';
+    const gridColor = 'hsla(180, 20%, 18%, 0.3)';
+
     const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
             legend: {
-                display: false,
-                labels: {
-                    color: '#e2e8f0',
-                    font: {
-                        family: 'Inter, sans-serif',
-                        size: 12
-                    }
-                }
+                display: false
             },
             tooltip: {
-                backgroundColor: 'rgba(26, 31, 53, 0.95)',
-                titleColor: '#e2e8f0',
-                bodyColor: '#94a3b8',
-                borderColor: 'rgba(99, 102, 241, 0.3)',
+                backgroundColor: 'hsla(240, 10%, 11%, 0.95)',
+                titleColor: textColor,
+                bodyColor: textColor,
+                borderColor: primaryTeal,
                 borderWidth: 1,
                 padding: 12,
-                cornerRadius: 8,
-                displayColors: true
+                cornerRadius: 12,
+                displayColors: true,
+                titleFont: {
+                    family: "'Nunito', sans-serif",
+                    size: 14,
+                    weight: '800'
+                },
+                bodyFont: {
+                    family: "'Nunito', sans-serif",
+                    size: 13,
+                    weight: '600'
+                }
             }
         }
     };
@@ -323,17 +332,17 @@ function initCharts() {
                 {
                     label: 'Upload',
                     data: [],
-                    backgroundColor: 'rgba(139, 92, 246, 0.8)',
-                    borderColor: 'rgba(139, 92, 246, 1)',
-                    borderWidth: 2,
+                    backgroundColor: 'hsla(340, 60%, 60%, 0.8)',
+                    borderColor: accentPink,
+                    borderWidth: 0,
                     borderRadius: 6
                 },
                 {
                     label: 'Download',
                     data: [],
-                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    borderWidth: 2,
+                    backgroundColor: 'hsla(170, 70%, 42%, 0.8)',
+                    borderColor: primaryTeal,
+                    borderWidth: 0,
                     borderRadius: 6
                 }
             ]
@@ -343,25 +352,25 @@ function initCharts() {
             scales: {
                 x: {
                     grid: {
-                        color: 'rgba(99, 102, 241, 0.05)',
-                        borderColor: 'rgba(99, 102, 241, 0.1)'
+                        display: false
                     },
                     ticks: {
-                        color: '#94a3b8',
+                        color: mutedColor,
                         font: {
-                            family: 'Inter, sans-serif'
+                            family: "'Nunito', sans-serif",
+                            weight: '700'
                         }
                     }
                 },
                 y: {
                     grid: {
-                        color: 'rgba(99, 102, 241, 0.05)',
-                        borderColor: 'rgba(99, 102, 241, 0.1)'
+                        color: gridColor
                     },
                     ticks: {
-                        color: '#94a3b8',
+                        color: mutedColor,
                         font: {
-                            family: 'Inter, sans-serif'
+                            family: "'Nunito', sans-serif",
+                            weight: '700'
                         },
                         callback: function (value) {
                             return formatBytes(value);
@@ -381,25 +390,18 @@ function initCharts() {
             datasets: [{
                 data: [0, 0],
                 backgroundColor: [
-                    'rgba(139, 92, 246, 0.8)',
-                    'rgba(59, 130, 246, 0.8)'
+                    accentPink,
+                    primaryTeal
                 ],
-                borderColor: [
-                    'rgba(139, 92, 246, 1)',
-                    'rgba(59, 130, 246, 1)'
-                ],
-                borderWidth: 2,
-                hoverOffset: 10
+                borderWidth: 0,
+                hoverOffset: 15
             }]
         },
         options: {
             ...commonOptions,
-            cutout: '70%',
+            cutout: '75%',
             plugins: {
-                ...commonOptions.plugins,
-                legend: {
-                    display: false
-                }
+                ...commonOptions.plugins
             }
         }
     });
