@@ -2,46 +2,48 @@
 REM PacketBuddy - One-Click Windows Setup
 REM Just double-click this file!
 
-setlocal EnableDelayedExpansion
-
-REM ═══════════════════════════════════════════════════════════
-REM  Admin Check
-REM ═══════════════════════════════════════════════════════════
-net session >nul 2>&1
-if %errorLevel% neq 0 (
-    cls
+REM ===========================================================
+REM  Admin Check (BEFORE enabling delayed expansion)
+REM ===========================================================
+echo Checking administrator privileges...
+whoami /groups | find "S-1-5-32-544" >nul 2>&1
+if %errorlevel% neq 0 (
     color 0E
     echo.
-    echo ┌────────────────────────────────────────────────────────┐
-    echo │  ⚠️  NEED ADMINISTRATOR RIGHTS                          │
-    echo └────────────────────────────────────────────────────────┘
+    echo +--------------------------------------------------------+
+    echo    NEED ADMINISTRATOR RIGHTS
+    echo +--------------------------------------------------------+
     echo.
     echo This is easy to fix:
     echo.
-    echo   1. Right-click this file (setup.bat)
+    echo   1. Right-click this file [setup.bat]
     echo   2. Click "Run as administrator"
     echo   3. Click "Yes" when Windows asks
     echo.
-    echo That's it! The setup will run automatically.
+    echo That is it. The setup will run automatically.
     echo.
     pause
     exit /b 1
 )
+echo [OK] Running as Administrator
+echo.
 
-REM ═══════════════════════════════════════════════════════════
+REM Now enable delayed expansion for the rest of the script
+setlocal EnableDelayedExpansion
+
+REM ===========================================================
 REM  Welcome Screen
-REM ═══════════════════════════════════════════════════════════
-cls
+REM ===========================================================
 color 0B
 echo.
-echo ╔════════════════════════════════════════════════════════╗
-echo ║                                                        ║
-echo ║         📊 PacketBuddy Setup Wizard                   ║
-echo ║                                                        ║
-echo ║    Track your internet usage automatically            ║
-echo ║    Takes about 2 minutes • Fully automated            ║
-echo ║                                                        ║
-echo ╚════════════════════════════════════════════════════════╝
+echo +========================================================+
+echo                                                          
+echo          PacketBuddy Setup Wizard                        
+echo                                                          
+echo     Track your internet usage automatically              
+echo     Takes about 2 minutes - Fully automated              
+echo                                                          
+echo +========================================================+
 echo.
 echo Starting in 3 seconds...
 timeout /t 3 /nobreak >nul
@@ -53,13 +55,13 @@ cd /d "%SCRIPT_DIR%"
 cd ..\..
 set "PROJECT_DIR=%CD%"
 
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
 REM  Step 1: Python Check
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
 echo.
-echo ┌────────────────────────────────────────────────────────┐
-echo │ [1/6] Checking Python...                              │
-echo └────────────────────────────────────────────────────────┘
+echo +--------------------------------------------------------+
+echo   [1/6] Checking Python...
+echo +--------------------------------------------------------+
 echo.
 
 set "PYTHON_CMD="
@@ -83,46 +85,46 @@ if "!PYTHON_CMD!"=="" (
     cls
     color 0C
     echo.
-    echo ┌────────────────────────────────────────────────────────┐
-    echo │  ❌ Python 3.11+ Not Found                             │
-    echo └────────────────────────────────────────────────────────┘
+    echo +--------------------------------------------------------+
+    echo   [X] Python 3.11+ Not Found
+    echo +--------------------------------------------------------+
     echo.
     echo Don't worry! This is easy to fix:
     echo.
     echo   1. Go to: https://www.python.org/downloads/
     echo   2. Download Python 3.11 or newer
-    echo   3. During install: CHECK ☑️ "Add Python to PATH"
+    echo   3. During install: CHECK "Add Python to PATH"
     echo   4. Run this setup again
     echo.
-    echo 💡 Tip: The checkbox is at the BOTTOM of the installer!
+    echo Tip: The checkbox is at the BOTTOM of the installer!
     echo.
     pause
     exit /b 1
 )
 
 for /f "tokens=*" %%V in ('!PYTHON_CMD! --version') do set "PY_VERSION=%%V"
-echo ✅ Found !PY_VERSION!
+echo [OK] Found !PY_VERSION!
 timeout /t 1 /nobreak >nul
 
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
 REM  Step 2: Virtual Environment
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
 echo.
-echo ┌────────────────────────────────────────────────────────┐
-echo │ [2/6] Setting up Python environment...                │
-echo └────────────────────────────────────────────────────────┘
+echo +--------------------------------------------------------+
+echo   [2/6] Setting up Python environment...
+echo +--------------------------------------------------------+
 echo.
 
 if exist "venv" (
-    echo ℹ️  Already exists, skipping...
+    echo [i] Already exists, skipping...
 ) else (
     echo Creating virtual environment...
     !PYTHON_CMD! -m venv venv
     if !errorLevel! equ 0 (
-        echo ✅ Environment created
+        echo [OK] Environment created
     ) else (
         color 0C
-        echo ❌ Failed to create environment
+        echo [X] Failed to create environment
         echo.
         echo Try running: python -m pip install --upgrade pip
         pause
@@ -131,14 +133,14 @@ if exist "venv" (
 )
 timeout /t 1 /nobreak >nul
 
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
 REM  Step 3: Install Dependencies
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
 echo.
-echo ┌────────────────────────────────────────────────────────┐
-echo │ [3/6] Installing required packages...                 │
-echo │ (This takes about 30 seconds)                          │
-echo └────────────────────────────────────────────────────────┘
+echo +--------------------------------------------------------+
+echo   [3/6] Installing required packages...
+echo   (This takes about 30 seconds)
+echo +--------------------------------------------------------+
 echo.
 
 call venv\Scripts\activate.bat
@@ -146,21 +148,21 @@ echo Installing packages (please wait)...
 python -m pip install --quiet --upgrade pip
 python -m pip install --quiet -r requirements.txt
 if !errorLevel! equ 0 (
-    echo ✅ All packages installed
+    echo [OK] All packages installed
 ) else (
     color 0E
-    echo ⚠️  Some packages may have failed
+    echo [!] Some packages may have failed
     echo Continuing anyway...
 )
 timeout /t 1 /nobreak >nul
 
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
 REM  Step 4: Configuration
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
 echo.
-echo ┌────────────────────────────────────────────────────────┐
-echo │ [4/6] Creating configuration...                       │
-echo └────────────────────────────────────────────────────────┘
+echo +--------------------------------------------------------+
+echo   [4/6] Creating configuration...
+echo +--------------------------------------------------------+
 echo.
 
 set "CONFIG_DIR=%USERPROFILE%\.packetbuddy"
@@ -168,23 +170,56 @@ if not exist "%CONFIG_DIR%" mkdir "%CONFIG_DIR%"
 
 if not exist "%CONFIG_DIR%\config.toml" (
     copy config.example.toml "%CONFIG_DIR%\config.toml" >nul
-    echo ✅ Configuration created
+    echo [OK] Configuration created
 ) else (
-    echo ℹ️  Configuration already exists
+    echo [i] Configuration already exists
 )
+
+REM Prompt for Neon DB connection string
+echo.
+echo +--------------------------------------------------------+
+echo   Database Configuration
+echo +--------------------------------------------------------+
+echo.
+echo Enter your NeonDB connection string.
+echo (Press Enter to skip if you want to configure later)
+echo.
+set /p "NEON_URL=NeonDB URL: "
+
+if not "!NEON_URL!"=="" (
+    REM Update config.toml with the provided Neon URL using PowerShell
+    powershell -Command "(Get-Content '%CONFIG_DIR%\config.toml') -replace 'neon_url = \"\"', 'neon_url = \"!NEON_URL!\"' | Set-Content '%CONFIG_DIR%\config.toml'"
+    echo [OK] Database URL configured
+) else (
+    echo [i] Skipped - You can set NEON_DB_URL environment variable later
+)
+echo.
 
 REM Initialize database
 python -c "from src.core.storage import storage; storage.get_device_id()" >nul 2>&1
-echo ✅ Database initialized
+echo [OK] Database initialized
 timeout /t 1 /nobreak >nul
 
-REM ═══════════════════════════════════════════════════════════
-REM  Step 5: Auto-Start Service
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
+REM  Step 5: Add to PATH
+REM ===========================================================
 echo.
-echo ┌────────────────────────────────────────────────────────┐
-echo │ [5/6] Setting up auto-start...                        │
-echo └────────────────────────────────────────────────────────┘
+echo +--------------------------------------------------------+
+echo   [5/7] Adding to PATH for CLI access...
+echo +--------------------------------------------------------+
+echo.
+
+REM Add project directory to user PATH using PowerShell
+powershell -Command "$currentPath = [Environment]::GetEnvironmentVariable('Path', 'User'); if ($currentPath -notlike '*%PROJECT_DIR%*') { [Environment]::SetEnvironmentVariable('Path', $currentPath + ';%PROJECT_DIR%', 'User'); Write-Host '[OK] Added to PATH' } else { Write-Host '[i] Already in PATH' }"
+timeout /t 1 /nobreak >nul
+
+REM ===========================================================
+REM  Step 6: Auto-Start Service
+REM ===========================================================
+echo.
+echo +--------------------------------------------------------+
+echo   [6/7] Setting up auto-start...
+echo +--------------------------------------------------------+
 echo.
 
 set "TASK_NAME=PacketBuddy"
@@ -217,11 +252,11 @@ REM /rl highest : Run with highest privileges (Admin)
 schtasks /create /tn "%TASK_NAME%" /tr "%TASK_CMD%" /sc onlogon /rl highest /f >nul 2>&1
 
 if !errorLevel! equ 0 (
-    echo ✅ Auto-start configured
+    echo [OK] Auto-start configured
 ) else (
     color 0E
     echo.
-    echo ⚠️  Auto-start setup failed
+    echo [!] Auto-start setup failed
     echo.
     echo This usually means you didn't run as Administrator.
     echo Please close this window and:
@@ -236,20 +271,20 @@ REM Verify task exists
 schtasks /query /tn "%TASK_NAME%" >nul 2>&1
 if !errorLevel! neq 0 (
     color 0C
-    echo ❌ Task creation failed
+    echo [X] Task creation failed
     pause
     exit /b 1
 )
 
 timeout /t 1 /nobreak >nul
 
-REM ═══════════════════════════════════════════════════════════
-REM  Step 6: Start Service
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
+REM  Step 7: Start Service
+REM ===========================================================
 echo.
-echo ┌────────────────────────────────────────────────────────┐
-echo │ [6/6] Starting PacketBuddy...                          │
-echo └────────────────────────────────────────────────────────┘
+echo +--------------------------------------------------------+
+echo   [7/7] Starting PacketBuddy...
+echo +--------------------------------------------------------+
 echo.
 
 echo Starting service (this takes 10-15 seconds)...
@@ -270,80 +305,80 @@ for /l %%i in (1,1,10) do (
 
 :ServiceRunning
 
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
 REM  Success Screen
-REM ═══════════════════════════════════════════════════════════
+REM ===========================================================
 cls
 if "!SUCCESS!"=="1" (
     color 0A
     echo.
-    echo ╔════════════════════════════════════════════════════════╗
-    echo ║                                                        ║
-    echo ║         ✅ PacketBuddy is Now Running!                ║
-    echo ║                                                        ║
-    echo ╚════════════════════════════════════════════════════════╝
+    echo +========================================================+
+    echo                                                          
+    echo          [OK] PacketBuddy is Now Running!                
+    echo                                                          
+    echo +========================================================+
     echo.
-    echo 🎉 Setup Complete!
+    echo Setup Complete!
     echo.
-    echo ┌────────────────────────────────────────────────────────┐
-    echo │  What's Next?                                          │
-    echo └────────────────────────────────────────────────────────┘
+    echo +--------------------------------------------------------+
+    echo   What's Next?
+    echo +--------------------------------------------------------+
     echo.
-    echo   📊 View Dashboard:
+    echo   View Dashboard:
     echo      http://127.0.0.1:7373/dashboard
     echo.
-    echo   🔄 Auto-Updates:
+    echo   Auto-Updates:
     echo      Enabled! You'll always have the latest version
     echo.
-    echo   🚀 Auto-Start:
+    echo   Auto-Start:
     echo      Runs automatically when you login
     echo.
-    echo   📝 Commands:
+    echo   Commands:
     echo      pb today    - See today's usage
     echo      pb summary  - See all-time stats
     echo.
-    echo ┌────────────────────────────────────────────────────────┐
-    echo │  Opening dashboard in 5 seconds...                     │
-    echo └────────────────────────────────────────────────────────┘
+    echo +--------------------------------------------------------+
+    echo   Opening dashboard in 5 seconds...
+    echo +--------------------------------------------------------+
     echo.
     timeout /t 5 /nobreak >nul
     start http://127.0.0.1:7373/dashboard
     echo.
-    echo ✨ You can close this window now!
+    echo You can close this window now!
     echo.
     pause
 ) else (
     color 0E
     echo.
-    echo ╔════════════════════════════════════════════════════════╗
-    echo ║                                                        ║
-    echo ║         ⚠️  Service Didn't Start                      ║
-    echo ║                                                        ║
-    echo ╚════════════════════════════════════════════════════════╝
+    echo +========================================================+
+    echo                                                          
+    echo          [!] Service Didn't Start                        
+    echo                                                          
+    echo +========================================================+
     echo.
     echo Don't worry! This is usually an easy fix.
     echo.
-    echo ┌────────────────────────────────────────────────────────┐
-    echo │  Quick Fixes:                                          │
-    echo └────────────────────────────────────────────────────────┘
+    echo +--------------------------------------------------------+
+    echo   Quick Fixes:
+    echo +--------------------------------------------------------+
     echo.
-    echo 1️⃣  Port 7373 might be in use
+    echo 1. Port 7373 might be in use
     echo    Solution: Restart your computer
     echo.
-    echo 2️⃣  Firewall might be blocking Python
+    echo 2. Firewall might be blocking Python
     echo    Solution: Click "Allow" when Windows asks
     echo.
-    echo 3️⃣  Try manual start:
+    echo 3. Try manual start:
     echo    Run: start.bat
     echo.
-    echo ┌────────────────────────────────────────────────────────┐
-    echo │  Need Help?                                            │
-    echo └────────────────────────────────────────────────────────┘
+    echo +--------------------------------------------------------+
+    echo   Need Help?
+    echo +--------------------------------------------------------+
     echo.
-    echo   📖 Troubleshooting Guide:
+    echo   Troubleshooting Guide:
     echo      docs\WINDOWS_SERVICE_NOT_STARTING.md
     echo.
-    echo   💬 Get Support:
+    echo   Get Support:
     echo      github.com/instax-dutta/packet-buddy/issues
     echo.
     echo The service will auto-start on next login anyway!
