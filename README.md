@@ -2,7 +2,7 @@
 
 **A lightweight, cross-platform network usage monitor that runs silently in the background and provides beautiful real-time analytics.**
 
-[![Version](https://img.shields.io/badge/version-1.4.0-brightgreen?style=flat-square)](https://github.com/instax-dutta/packet-buddy)
+[![Version](https://img.shields.io/badge/version-1.4.1-brightgreen?style=flat-square)](https://github.com/instax-dutta/packet-buddy)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 ---
@@ -17,12 +17,33 @@
 
 ---
 
-## 🎉 What's New in v1.4.0
+## 📦 Installation & Updates
 
-- **📊 Comprehensive Export System**: CSV, JSON, HTML (Year Wrap-Up), and TOON formats.
-- **⚡ Persistent Peak Speed**: Tracks and saves your highest speeds across sessions.
-- **🤖 TOON Format**: High-efficiency, token-optimized format for LLM analysis.
-- **🎨 Interactive Dashboard**: One-click year wrap-up and enhanced analytics.
+PacketBuddy can be installed or updated directly via `pip` or the built-in CLI:
+
+### First Time Installation
+```bash
+pip install packetbuddy
+```
+
+### Update to Latest Version
+```bash
+pip install --upgrade packetbuddy
+```
+
+### Force Update (via CLI)
+```bash
+pb update --force
+```
+
+---
+
+## 🎉 What's New in v1.4.1
+
+- **🌊 Liquid / Fluid UI**: Complete dashboard redesign with organic glassmorphism and morphing transitions.
+- **📦 Fixed Assets Distribution**: Resolved an issue where dashbaord files were missing from fresh pip installs.
+- **🚀 Faster Analytics**: Optimized chart rendering and data aggregation.
+- **📊 Enhanced Export**: Improved CSV, JSON, and TOON export efficiency.
 
 ---
 
@@ -40,9 +61,11 @@ If you are a developer or an **AI Assistant**, start here:
 ## 🔧 CLI Commands
 
 After installation, use the `pb` command:
-- `pb today` — See today's usage.
-- `pb export --format html` — Generate your Year Wrap-Up.
-- `pb update` — Automatically check for and apply updates.
+- `pb live` — Real-time upload/download dashboard in terminal.
+- `pb today` — Summary of today's usage and costs.
+- `pb month` — Breakdown of the current month's daily usage.
+- `pb export --format html` — Generate your Year Wrap-Up report.
+- `pb update` — Check and apply latest updates from GitHub.
 
 ---
 
