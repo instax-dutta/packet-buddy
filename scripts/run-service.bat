@@ -3,9 +3,12 @@ REM PacketBuddy Service Launcher
 REM This script is used by Windows Task Scheduler to run PacketBuddy service
 REM It properly sets up the environment before starting the server
 
-REM Get the directory where this script is located
+REM Get the directory where this script is located (scripts folder)
 set "SCRIPT_DIR=%~dp0"
-set "PROJECT_DIR=%SCRIPT_DIR:~0,-1%"
+
+REM Get project root (parent of scripts folder)
+cd /d "%SCRIPT_DIR%.."
+set "PROJECT_DIR=%CD%"
 
 REM Change to project directory
 cd /d "%PROJECT_DIR%"

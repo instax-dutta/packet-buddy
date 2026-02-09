@@ -48,7 +48,7 @@ if ($existingTask) {
 }
 
 # Use the dedicated launcher script that sets up environment properly
-$launcherScript = Join-Path $projectPath "run-service.bat"
+$launcherScript = Join-Path $projectPath "scripts\run-service.bat"
 
 # Create action using the launcher script
 $action = New-ScheduledTaskAction `

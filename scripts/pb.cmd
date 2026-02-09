@@ -2,9 +2,12 @@
 REM PacketBuddy CLI Shortcut for Windows
 REM This allows you to use 'pb' from anywhere
 
-REM Get the directory where this script is located
+REM Get the directory where this script is located (scripts folder)
 set SCRIPT_DIR=%~dp0
-set PROJECT_DIR=%SCRIPT_DIR:~0,-1%
+
+REM Get project root (parent of scripts folder)
+cd /d "%SCRIPT_DIR%.."
+set PROJECT_DIR=%CD%
 
 REM Activate venv and run CLI
 cd /d "%PROJECT_DIR%"

@@ -60,7 +60,7 @@ REM  Step 1: Python Check
 REM ===========================================================
 echo.
 echo +--------------------------------------------------------+
-echo   [1/6] Checking Python...
+echo   [1/7] Checking Python...
 echo +--------------------------------------------------------+
 echo.
 
@@ -83,23 +83,119 @@ for %%P in (python python3 py) do (
 :PythonFound
 if "!PYTHON_CMD!"=="" (
     cls
-    color 0C
+    color 0E
     echo.
     echo +--------------------------------------------------------+
-    echo   [X] Python 3.11+ Not Found
+    echo   [!] Python 3.11+ Not Found
     echo +--------------------------------------------------------+
     echo.
-    echo Don't worry! This is easy to fix:
+    echo Python is required but not installed on your system.
     echo.
-    echo   1. Go to: https://www.python.org/downloads/
-    echo   2. Download Python 3.11 or newer
-    echo   3. During install: CHECK "Add Python to PATH"
-    echo   4. Run this setup again
+    echo We can automatically download and install Python for you.
+    echo   - Downloads the latest Python from python.org (~25MB^)
+    echo   - Installs silently with "Add to PATH" enabled
     echo.
-    echo Tip: The checkbox is at the BOTTOM of the installer!
+    set /p "INSTALL_PYTHON=Would you like to install Python now? (Y/N): "
+    if /i "!INSTALL_PYTHON!" neq "Y" (
+        echo.
+        echo Setup cancelled. Please install Python manually:
+        echo   1. Go to: https://www.python.org/downloads/
+        echo   2. Download Python 3.11 or newer
+        echo   3. During install: CHECK "Add Python to PATH"
+        echo   4. Run this setup again
+        echo.
+        pause
+        exit /b 1
+    )
+    
     echo.
-    pause
-    exit /b 1
+    echo +--------------------------------------------------------+
+    echo   Fetching latest Python version...
+    echo +--------------------------------------------------------+
+    echo.
+    
+    REM Fetch latest Python version from python.org using PowerShell
+    for /f "tokens=*" %%V in ('powershell -Command "try { $html = Invoke-WebRequest -Uri 'https://www.python.org/downloads/' -UseBasicParsing; $match = [regex]::Match($html.Content, 'Download Python (\d+\.\d+\.\d+)'); if ($match.Success) { $match.Groups[1].Value } else { '3.12.8' } } catch { '3.12.8' }"') do set "PYTHON_VERSION=%%V"
+    
+    echo Found latest version: Python !PYTHON_VERSION!
+    echo.
+    echo +--------------------------------------------------------+
+    echo   Downloading Python !PYTHON_VERSION!...
+    echo +--------------------------------------------------------+
+    echo.
+    
+    set "PYTHON_URL=https://www.python.org/ftp/python/!PYTHON_VERSION!/python-!PYTHON_VERSION!-amd64.exe"
+    set "PYTHON_INSTALLER=%TEMP%\python-installer.exe"
+    
+    REM Download Python installer using curl (built into Windows 10+)
+    curl -L --progress-bar -o "%PYTHON_INSTALLER%" "!PYTHON_URL!"
+    if !errorLevel! neq 0 (
+        color 0C
+        echo.
+        echo [X] Failed to download Python installer.
+        echo     Please check your internet connection and try again.
+        echo.
+        pause
+        exit /b 1
+    )
+    
+    echo.
+    echo +--------------------------------------------------------+
+    echo   Installing Python (this may take a minute^)...
+    echo +--------------------------------------------------------+
+    echo.
+    echo Please wait while Python is being installed...
+    
+    REM Silent install with PATH configuration
+    "%PYTHON_INSTALLER%" /quiet InstallAllUsers=0 PrependPath=1 Include_pip=1 Include_test=0
+    if !errorLevel! neq 0 (
+        color 0C
+        echo.
+        echo [X] Python installation failed.
+        echo     Please try installing manually from python.org
+        echo.
+        pause
+        exit /b 1
+    )
+    
+    REM Clean up installer
+    del "%PYTHON_INSTALLER%" 2>nul
+    
+    echo [OK] Python installed successfully!
+    echo.
+    echo +--------------------------------------------------------+
+    echo   Refreshing PATH...
+    echo +--------------------------------------------------------+
+    echo.
+    
+    REM Refresh PATH in current session
+    for /f "tokens=*" %%a in ('powershell -Command "[Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')"') do set "PATH=%%a"
+    
+    REM Re-check for Python after installation
+    set "PYTHON_CMD="
+    for %%P in (python python3 py) do (
+        %%P --version >nul 2>&1
+        if !errorLevel! equ 0 (
+            set "PYTHON_CMD=%%P"
+            goto :PythonInstalledOK
+        )
+    )
+    
+    :PythonInstalledOK
+    if "!PYTHON_CMD!"=="" (
+        color 0C
+        echo.
+        echo [X] Python installation completed but not detected.
+        echo     Please restart this script or your computer.
+        echo.
+        pause
+        exit /b 1
+    )
+    
+    color 0A
+    echo [OK] Python is now available!
+    timeout /t 2 /nobreak >nul
+    color 0B
 )
 
 for /f "tokens=*" %%V in ('!PYTHON_CMD! --version') do set "PY_VERSION=%%V"
@@ -111,7 +207,7 @@ REM  Step 2: Virtual Environment
 REM ===========================================================
 echo.
 echo +--------------------------------------------------------+
-echo   [2/6] Setting up Python environment...
+echo   [2/7] Setting up Python environment...
 echo +--------------------------------------------------------+
 echo.
 
@@ -138,7 +234,7 @@ REM  Step 3: Install Dependencies
 REM ===========================================================
 echo.
 echo +--------------------------------------------------------+
-echo   [3/6] Installing required packages...
+echo   [3/7] Installing required packages...
 echo   (This takes about 30 seconds)
 echo +--------------------------------------------------------+
 echo.
@@ -161,7 +257,7 @@ REM  Step 4: Configuration
 REM ===========================================================
 echo.
 echo +--------------------------------------------------------+
-echo   [4/6] Creating configuration...
+echo   [4/7] Creating configuration...
 echo +--------------------------------------------------------+
 echo.
 
@@ -188,7 +284,12 @@ set /p "NEON_URL=NeonDB URL: "
 
 if not "!NEON_URL!"=="" (
     REM Update config.toml with the provided Neon URL using PowerShell
-    powershell -Command "(Get-Content '%CONFIG_DIR%\config.toml') -replace 'neon_url = \"\"', 'neon_url = \"!NEON_URL!\"' | Set-Content '%CONFIG_DIR%\config.toml'"
+    REM Pass URL via environment variable to prevent command injection
+    set "PB_NEON_URL=!NEON_URL!"
+    set "PB_CONFIG_DIR=%CONFIG_DIR%"
+    powershell -Command "$url = $env:PB_NEON_URL; $configPath = $env:PB_CONFIG_DIR + '\config.toml'; (Get-Content $configPath) -replace 'neon_url = \"\"', ('neon_url = \"' + $url + '\"') | Set-Content $configPath"
+    set "PB_NEON_URL="
+    set "PB_CONFIG_DIR="
     echo [OK] Database URL configured
 ) else (
     echo [i] Skipped - You can set NEON_DB_URL environment variable later
@@ -209,8 +310,10 @@ echo   [5/7] Adding to PATH for CLI access...
 echo +--------------------------------------------------------+
 echo.
 
-REM Add project directory to user PATH using PowerShell
-powershell -Command "$currentPath = [Environment]::GetEnvironmentVariable('Path', 'User'); if ($currentPath -notlike '*%PROJECT_DIR%*') { [Environment]::SetEnvironmentVariable('Path', $currentPath + ';%PROJECT_DIR%', 'User'); Write-Host '[OK] Added to PATH' } else { Write-Host '[i] Already in PATH' }"
+REM Add scripts directory to user PATH using PowerShell
+set "PB_SCRIPTS_DIR=%PROJECT_DIR%\scripts"
+powershell -Command "$scriptsDir = $env:PB_SCRIPTS_DIR; $currentPath = [Environment]::GetEnvironmentVariable('Path', 'User'); if ($currentPath -notlike \"*$scriptsDir*\") { [Environment]::SetEnvironmentVariable('Path', $currentPath + ';' + $scriptsDir, 'User'); Write-Host '[OK] Added to PATH' } else { Write-Host '[i] Already in PATH' }"
+set "PB_SCRIPTS_DIR="
 timeout /t 1 /nobreak >nul
 
 REM ===========================================================
@@ -223,7 +326,7 @@ echo +--------------------------------------------------------+
 echo.
 
 set "TASK_NAME=PacketBuddy"
-set "LAUNCHER_SCRIPT=%PROJECT_DIR%\run-service.bat"
+set "LAUNCHER_SCRIPT=%PROJECT_DIR%\scripts\run-service.bat"
 
 REM Detect pythonw.exe in venv for headless mode
 set "PYTHON_EXE=%PROJECT_DIR%\venv\Scripts\pythonw.exe"
