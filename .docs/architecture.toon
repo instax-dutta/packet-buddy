@@ -24,10 +24,11 @@ sync = "src/core/sync.py - The bridge. Local -> NeonDB sync"
 api = "src/api/server.py - The interface. RESTful endpoints"
 updater = "src/utils/updater.py - The evolution. Git-based auto-updates"
 
-[v1_4_0_evolution]
+[v1_4_1_evolution]
 exports = "Decoupled report generation from core logic. Added TOON and HTML templates."
 peak_speed = "Stateful tracking. High-water mark stored in SQLite aggregates."
-versioning = "Dynamic VERSION file reading to prevent Python module caching issues."
+versioning = "Dynamic SSOT: src/version.py reads /VERSION at runtime to bypass Python module caching."
+neon_sync = "Batch aggregation (O(1) updates) + 5min intervals to allow serverless DB to sleep."
 
 [network_efficiency]
 polling = "1s on AC, 2s on Battery"

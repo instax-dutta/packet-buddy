@@ -21,17 +21,18 @@ performance = "→ architecture.toon [performance] + quick-reference.toon [confi
 
 [project_summary]
 name = "PacketBuddy"
-version = "1.4.0"
+version = "1.4.1"
 type = "Network usage monitoring tool"
 platforms = ["Windows", "macOS", "Linux"]
 tech = ["Python 3.11+", "FastAPI", "SQLite", "NeonDB (Cloud Sync)", "psutil", "Chart.js"]
 resources = "<40MB RAM, <0.3% CPU"
 
-[v1_4_0_features]
+[v1_4_1_features]
 export_system = "Full overhaul - CSV, JSON, HTML (Year Wrap-Up), and TOON formats"
 peak_speed = "Persistent tracking across sessions with SQLite backfill"
 toon_format = "Token Optimized Object Notation for LLMs (~60% token reduction)"
-dashboard = "Year Wrap-Up button + visual improvements"
+dashboard = "Liquid/Fluid UI with Glassmorphism and Year Wrap-Up integration"
+versioning = "Dynamic SSOT Versioning (Reads from VERSION file at runtime)"
 
 [files_in_docs]
 index = {file="index.toon", desc="This file - navigation guide"}

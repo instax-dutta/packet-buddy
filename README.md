@@ -2,6 +2,8 @@
 
 **A lightweight, cross-platform network usage monitor that runs silently in the background and provides beautiful real-time analytics.**
 
+![PacketBuddy Dashboard Showcase](assets/image.png)
+
 [![Version](https://img.shields.io/badge/version-1.4.1-brightgreen?style=flat-square)](https://github.com/instax-dutta/packet-buddy)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
@@ -40,10 +42,10 @@ pb update --force
 
 ## 🎉 What's New in v1.4.1
 
-- **🌊 Liquid / Fluid UI**: Complete dashboard redesign with organic glassmorphism and morphing transitions.
-- **📦 Fixed Assets Distribution**: Resolved an issue where dashbaord files were missing from fresh pip installs.
-- **🚀 Faster Analytics**: Optimized chart rendering and data aggregation.
-- **📊 Enhanced Export**: Improved CSV, JSON, and TOON export efficiency.
+- **🌊 Liquid / Fluid UI**: Complete dashboard redesign with organic glassmorphism, morphing transitions, and a "Year Wrap-Up" experience.
+- **🛡️ SSOT Versioning**: Dynamic runtime versioning that bypasses Python caching—making updates seamless.
+- **🚀 Optimized Sync**: Refactored NeonDB synchronization with batch aggregation to reduce API calls and costs.
+- **📊 Enhanced Export**: Improved CSV, JSON, and TOON export efficiency for both humans and AI agents.
 
 ---
 
