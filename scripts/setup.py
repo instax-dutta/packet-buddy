@@ -2,11 +2,15 @@ from setuptools import setup, find_packages
 
 setup(
     name="packetbuddy",
-    version="1.3.3",
+    version="1.4.1",
     description="Ultra-lightweight cross-platform network usage tracker",
     author="PacketBuddy Team",
     python_requires=">=3.11",
     packages=find_packages(),
+    include_package_data=True,
+    package_data={
+        "": ["dashboard/*", "dashboard/**/*", "VERSION", "LICENSE", "README.md"],
+    },
     install_requires=[
         "psutil>=5.9.6",
         "fastapi>=0.104.1",
