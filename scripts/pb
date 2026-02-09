@@ -11,7 +11,9 @@ while [ -h "$SOURCE" ]; do
     [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
 done
 SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-PROJECT_DIR="$SCRIPT_DIR"
+
+# Get project root (parent of scripts folder)
+PROJECT_DIR="$( cd -P "$SCRIPT_DIR/.." && pwd )"
 
 # Activate venv and run CLI
 cd "$PROJECT_DIR"

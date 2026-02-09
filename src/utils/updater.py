@@ -131,12 +131,94 @@ def perform_update() -> bool:
                     timeout=120
                 )
         
+        # Update system PATH to ensure 'pb' command works
+        logger.info("Updating system PATH...")
+        update_path()
+        
         logger.info("Auto-update completed successfully!")
         return True
         
     except Exception as e:
         logger.error(f"Update failed: {e}")
         return False
+
+
+def update_path() -> bool:
+    """
+    Update the system PATH to include the PacketBuddy scripts directory.
+    This ensures the 'pb' command works after an update, especially if the
+    installation directory has changed.
+    
+    Returns:
+        True if PATH was updated or already correct, False on error.
+    """
+    import platform
+    system = platform.system()
+    
+    scripts_dir = str(PROJECT_ROOT / "scripts")
+    
+    try:
+        if system == "Windows":
+            # Use PowerShell to update User PATH
+            # This script:
+            # 1. Gets current user PATH
+            # 2. Removes any stale packet-buddy paths
+            # 3. Adds current scripts directory if not present
+            ps_script = '''
+$scriptsDir = $env:PB_SCRIPTS_DIR
+$currentPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+
+# Split path into components
+$pathParts = $currentPath -split ';' | Where-Object { $_ -ne '' }
+
+# Remove any existing packet-buddy paths (stale or current)
+$cleanedParts = $pathParts | Where-Object { $_ -notlike '*packet-buddy*scripts*' }
+
+# Add current scripts directory
+$cleanedParts += $scriptsDir
+
+# Join and set the new PATH
+$newPath = ($cleanedParts | Select-Object -Unique) -join ';'
+[Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+
+Write-Host 'PATH updated successfully'
+'''
+            # Set environment variable for the PowerShell script
+            env = os.environ.copy()
+            env['PB_SCRIPTS_DIR'] = scripts_dir
+            
+            result = subprocess.run(
+                ["powershell", "-Command", ps_script],
+                capture_output=True,
+                text=True,
+                env=env,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                logger.info(f"PATH updated: added {scripts_dir}")
+                return True
+            else:
+                logger.error(f"Failed to update PATH: {result.stderr}")
+                return False
+                
+        elif system == "Darwin":
+            # macOS - check common shell profiles
+            logger.info("macOS detected. PATH update guidance:")
+            logger.info(f"  Add to ~/.zshrc or ~/.bash_profile: export PATH=\"$PATH:{scripts_dir}\"")
+            return True
+            
+        elif system == "Linux":
+            # Linux - check common shell profiles  
+            logger.info("Linux detected. PATH update guidance:")
+            logger.info(f"  Add to ~/.bashrc or ~/.profile: export PATH=\"$PATH:{scripts_dir}\"")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Failed to update PATH: {e}")
+        return False
+    
+    return True
 
 
 def restart_service():

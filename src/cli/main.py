@@ -179,6 +179,7 @@ def update(check_only: bool, force: bool):
         
         if perform_update():
             click.echo("✅ Update completed successfully!")
+            click.echo("🔧 PATH has been updated to the current installation")
             click.echo("\nℹ️  Your data is safe - nothing was deleted")
             
             if click.confirm("\n🔄 Restart service now?", default=True):
