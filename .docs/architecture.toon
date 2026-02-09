@@ -1,8 +1,8 @@
 # PacketBuddy Architecture - TOON Format
 
 [meta]
-version = "1.4.0"
-updated = "2026-01-28"
+version = "1.4.1"
+updated = "2026-02-09"
 
 [design_principles]
 weight = "Ultra-lightweight (<40MB RAM)"

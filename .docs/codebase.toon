@@ -2,15 +2,15 @@
 
 [meta]
 project = "PacketBuddy"
-version = "1.4.0"
-updated = "2026-01-28"
+version = "1.4.1"
+updated = "2026-02-09"
 type = "network_monitoring_tool"
 platforms = ["Windows", "macOS", "Linux"]
 
 [summary]
 desc = "Ultra-lightweight network usage tracker. <40MB RAM, <0.3% CPU."
 tech_stack = ["Python 3.11+", "FastAPI", "SQLite", "NeonDB (Optional Sync)", "psutil", "Chart.js"]
-v1_4_0_overhaul = "New Export System (HTML Wrap-up, TOON LLM-friendly), Persistent Peak Speed, NeonDB Sync improvements"
+v1_4_1_overhaul = "New Export System (HTML Wrap-up, TOON LLM-friendly), Persistent Peak Speed, NeonDB Batch Sync, Dynamic SSOT Versioning"
 
 [structure]
 root = "packet-buddy/"
