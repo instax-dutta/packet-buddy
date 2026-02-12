@@ -344,18 +344,15 @@ if !errorLevel! equ 0 (
     schtasks /delete /tn "%TASK_NAME%" /f >nul 2>&1
 )
 
-REM Create scheduled task
-REM We execute pythonw.exe explicitly pointing to our launcher script
-REM This avoids "Screen flashing" because pythonw.exe is a GUI subsystem app (no console)
-set "TASK_CMD=\"%PYTHON_EXE%\" \"%LAUNCHER_SCRIPT%\""
-
-REM Create task
-REM /sc onlogon : Start when user logs in
-REM /rl highest : Run with highest privileges (Admin)
-schtasks /create /tn "%TASK_NAME%" /tr "%TASK_CMD%" /sc onlogon /rl highest /f >nul 2>&1
+REM Create task with both Logon and Hourly repetition (via PowerShell for better trigger support)
+REM This ensures it starts on login AND restarts if it crashes/stops
+echo Registering scheduled task with watchdog...
+set "PB_PYTHON_EXE=%PYTHON_EXE%"
+set "PB_LAUNCHER_SCRIPT=%LAUNCHER_SCRIPT%"
+powershell -Command "$action = New-ScheduledTaskAction -Execute $env:PB_PYTHON_EXE -Argument \"`\"$env:PB_LAUNCHER_SCRIPT`\"\"; $triggers = @(New-ScheduledTaskTrigger -AtLogOn, New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 60)); $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 0); Register-ScheduledTask -TaskName \"%TASK_NAME%\" -Action $action -Trigger $triggers -Settings $settings -Force"
 
 if !errorLevel! equ 0 (
-    echo [OK] Auto-start configured
+    echo [OK] Auto-start configured with watchdog
 ) else (
     color 0E
     echo.

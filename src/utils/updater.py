@@ -27,6 +27,8 @@ def get_current_commit() -> Optional[str]:
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             timeout=5
         )
         if result.returncode == 0:
@@ -44,6 +46,9 @@ def get_remote_commit() -> Optional[str]:
             ["git", "fetch", "origin", "main"],
             cwd=PROJECT_ROOT,
             capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
             timeout=10
         )
         
@@ -52,6 +57,8 @@ def get_remote_commit() -> Optional[str]:
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             timeout=5
         )
         if result.returncode == 0:
@@ -99,6 +106,9 @@ def perform_update() -> bool:
             ["git", "stash"],
             cwd=PROJECT_ROOT,
             capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
             timeout=10
         )
         
@@ -108,6 +118,8 @@ def perform_update() -> bool:
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             timeout=30
         )
         
@@ -128,12 +140,16 @@ def perform_update() -> bool:
                     [str(venv_python), "-m", "pip", "install", "--quiet", "-r", str(requirements_file)],
                     cwd=PROJECT_ROOT,
                     capture_output=True,
+                    text=True,
+                    encoding='utf-8',
+                    errors='replace',
                     timeout=120
                 )
         
-        # Update system PATH to ensure 'pb' command works
-        logger.info("Updating system PATH...")
+        # Update system PATH and service registration
+        logger.info("Updating system PATH and service registration...")
         update_path()
+        register_service()
         
         logger.info("Auto-update completed successfully!")
         return True
@@ -191,6 +207,8 @@ Write-Host 'PATH updated successfully'
                 ["powershell", "-Command", ps_script],
                 capture_output=True,
                 text=True,
+                encoding='utf-8',
+                errors='replace',
                 env=env,
                 timeout=30
             )
@@ -216,6 +234,74 @@ Write-Host 'PATH updated successfully'
             
     except Exception as e:
         logger.error(f"Failed to update PATH: {e}")
+        return False
+    
+    return True
+
+
+def register_service() -> bool:
+    """
+    Ensure the PacketBuddy service is registered with the OS.
+    On Windows, this creates/updates a scheduled task with watchdog triggers.
+    """
+    import platform
+    import subprocess
+    system = platform.system()
+    
+    try:
+        if system == "Windows":
+            # Detect pythonw.exe in venv
+            venv_pythonw = PROJECT_ROOT / "venv" / "Scripts" / "pythonw.exe"
+            if not venv_pythonw.exists():
+                venv_pythonw = PROJECT_ROOT / "venv" / "Scripts" / "python.exe"
+            
+            launcher_script = PROJECT_ROOT / "service" / "windows" / "launcher.py"
+            
+            if not venv_pythonw.exists() or not launcher_script.exists():
+                return False
+                
+            # Use PowerShell to register a robust task
+            ps_script = '''
+$taskName = "PacketBuddy"
+$pythonExe = $env:PB_PYTHON_EXE
+$launcherScript = $env:PB_LAUNCHER_SCRIPT
+
+$action = New-ScheduledTaskAction -Execute $pythonExe -Argument "`"$launcherScript`""
+$triggers = @(
+    New-ScheduledTaskTrigger -AtLogOn,
+    New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 60)
+)
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 0)
+
+# Register/Update the task
+Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $triggers -Settings $settings -Force
+Write-Host "Service registered successfully"
+'''
+            env = os.environ.copy()
+            env['PB_PYTHON_EXE'] = str(venv_pythonw)
+            env['PB_LAUNCHER_SCRIPT'] = str(launcher_script)
+            
+            subprocess.run(
+                ["powershell", "-Command", ps_script],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                env=env,
+                timeout=30
+            )
+            return True
+            
+        elif system == "Darwin":
+            # macOS - usually handled by setup.sh, but could verify launchd here
+            return True
+            
+        elif system == "Linux":
+            # Linux - usually handled by setup.sh, but could verify systemd here
+            return True
+            
+    except Exception as e:
+        logger.error(f"Failed to register service: {e}")
         return False
     
     return True

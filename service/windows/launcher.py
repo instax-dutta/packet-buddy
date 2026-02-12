@@ -22,8 +22,8 @@ sys.path.insert(0, str(project_root))
 
 # 3. Redirect stdout/stderr for pythonw compatibility
 # pythonw.exe has no stdout/stderr, which causes logging handlers (StreamHandler) to fail
-sys.stdout = open(project_root / "service_stdout.log", "w", buffering=1)
-sys.stderr = open(project_root / "service_stderr.log", "w", buffering=1)
+sys.stdout = open(project_root / "service_stdout.log", "w", buffering=1, encoding='utf-8')
+sys.stderr = open(project_root / "service_stderr.log", "w", buffering=1, encoding='utf-8')
 
 # 4. Import and run server
 try:

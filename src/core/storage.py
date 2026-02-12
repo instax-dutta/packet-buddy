@@ -109,6 +109,16 @@ class Storage:
                     value INTEGER NOT NULL
                 )
             """)
+
+            # System state (for tracking absolute counters across restarts)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS system_state (
+                    key TEXT PRIMARY KEY,
+                    value_text TEXT,
+                    value_int INTEGER,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
             
             # Register this device
             cursor.execute("""
@@ -308,6 +318,23 @@ class Storage:
             
             row = cursor.fetchone()
             return dict(row) if row else {}
+
+    def get_state(self, key: str) -> Dict:
+        """Get a value from system_state."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT value_text, value_int FROM system_state WHERE key = ?", (key,))
+            row = cursor.fetchone()
+            return dict(row) if row else {}
+
+    def set_state(self, key: str, value_text: Optional[str] = None, value_int: Optional[int] = None):
+        """Set a value in system_state."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT OR REPLACE INTO system_state (key, value_text, value_int, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            """, (key, value_text, value_int))
 
 
 # Global storage instance

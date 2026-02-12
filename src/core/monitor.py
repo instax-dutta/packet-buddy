@@ -128,6 +128,52 @@ class NetworkMonitor:
             
         self.last_sent, self.last_received = self._get_network_counters()
         
+        # 4. Handle "Catch-up" usage (data transferred while app was closed)
+        try:
+            boot_time = int(psutil.boot_time())
+            saved_boot_time = storage.get_state("boot_time").get("value_int")
+            last_sent_state = storage.get_state("last_abs_sent")
+            last_received_state = storage.get_state("last_abs_received")
+            
+            total_sent_today, total_received_today, _ = storage.get_today_usage()
+            has_data_today = (total_sent_today + total_received_today) > 0
+            
+            gap_sent = 0
+            gap_received = 0
+            
+            if saved_boot_time == boot_time:
+                # Same boot session
+                if last_sent_state and last_received_state:
+                    gap_sent = self.last_sent - last_sent_state.get("value_int", self.last_sent)
+                    gap_received = self.last_received - last_received_state.get("value_int", self.last_received)
+                elif not has_data_today:
+                    # First run today on this boot, but no last state
+                    # Assume all usage since boot is today's usage
+                    gap_sent = self.last_sent
+                    gap_received = self.last_received
+            else:
+                # New boot session
+                # Usage since boot is definitely new
+                gap_sent = self.last_sent
+                gap_received = self.last_received
+            
+            if gap_sent > 1024 or gap_received > 1024:  # Only catch up if > 1KB
+                print(f"📊 Catching up on missed usage: {gap_sent}B sent, {gap_received}B received")
+                storage.insert_usage(
+                    bytes_sent=max(0, gap_sent),
+                    bytes_received=max(0, gap_received),
+                    speed=0,
+                    timestamp=datetime.now()
+                )
+            
+            # Update states for next time
+            storage.set_state("boot_time", value_int=boot_time)
+            storage.set_state("last_abs_sent", value_int=self.last_sent)
+            storage.set_state("last_abs_received", value_int=self.last_received)
+            
+        except Exception as e:
+            print(f"Catch-up logic failed: {e}")
+        
         # Start monitoring and batch writing tasks
         try:
             await asyncio.gather(
@@ -191,6 +237,13 @@ class NetworkMonitor:
                 # Update last values
                 self.last_sent = current_sent
                 self.last_received = current_received
+                
+                # Periodically update absolute counters in DB for next startup catch-up
+                # We do this every 5 minutes or so to avoid too much DB noise, 
+                # or just reuse the batch write interval
+                if len(self.pending_writes) % 10 == 0: # Every ~10 samples
+                    storage.set_state("last_abs_sent", value_int=current_sent)
+                    storage.set_state("last_abs_received", value_int=current_received)
                 
             except Exception as e:
                 print(f"Monitor loop error: {e}")
