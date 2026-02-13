@@ -1,8 +1,8 @@
 # PacketBuddy Quick Reference - TOON Format
 
 [meta]
-version = "1.4.0"
-updated = "2026-01-28"
+version = "1.4.2"
+updated = "2026-02-12"
 
 [onboarding_shortcut]
 windows = "Run setup.bat in root (as Admin)"
@@ -35,13 +35,23 @@ symptom = "Dashboard won't load, API connection refused"
 solution = "1. Check if pythonw.exe is running in Task Manager. 2. Run setup.bat as Administrator. 3. Check logs in %USERPROFILE%\\.packetbuddy\\stderr.log"
 
 [issue_2_old_version_showing]
-symptom = "Dashboard shows v1.3.3 but code is v1.4.0"
-cause = "Python module caching"
-fix = "Run force-restart.bat in project root"
+symptom = "Dashboard shows old version but code is newer"
+cause = "Python module caching or stale VERSION file"
+fix = "v1.4.2 uses dynamic versioning from VERSION file - restart the service or run 'pb update'"
 
 [issue_3_port_in_use]
 symptom = "Error: [Errno 10048] Only one usage of each socket address"
-fix = "Update port in ~/.packetbuddy/config.toml [api] section"
+fix = "Update port in %USERPROFILE%\\.packetbuddy\\config.toml [api] section"
+
+[issue_4_no_catch_up_data]
+symptom = "First run after reboot shows zero usage"
+cause = "Expected behavior - app records usage from when it started, not before"
+fix = "v1.4.2 has catch-up logic - if app was running during boot, usage should auto-catch-up"
+
+[issue_5_service_not_recovering]
+symptom = "Service stops after system sleep/hibernate"
+cause = "Task Scheduler watchdog should auto-restart within 60 minutes"
+fix = "Check Task Scheduler for 'PacketBuddy' task. Run: schtasks /query /tn PacketBuddy"
 
 [config_keys]
 location = "Windows: %USERPROFILE%\\.packetbuddy\\config.toml | Unix: ~/.packetbuddy/config.toml"

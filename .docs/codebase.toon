@@ -2,34 +2,35 @@
 
 [meta]
 project = "PacketBuddy"
-version = "1.4.1"
-updated = "2026-02-09"
+version = "1.4.2"
+updated = "2026-02-12"
 type = "network_monitoring_tool"
 platforms = ["Windows", "macOS", "Linux"]
 
 [summary]
 desc = "Ultra-lightweight network usage tracker. <40MB RAM, <0.3% CPU."
 tech_stack = ["Python 3.11+", "FastAPI", "SQLite", "NeonDB (Optional Sync)", "psutil", "Chart.js"]
-v1_4_1_overhaul = "New Export System (HTML Wrap-up, TOON LLM-friendly), Persistent Peak Speed, NeonDB Batch Sync, Dynamic SSOT Versioning"
+v1_4_2_update = "Crash recovery with hourly watchdog, catch-up usage logic, primary interface detection, auto service registration on updates, Unicode fixes"
 
 [structure]
 root = "packet-buddy/"
-main_dirs = ["src/", "dashboard/", "service/", "docs/", ".docs/"]
+main_dirs = ["src/", "dashboard/", "service/", "scripts/", "docs/", ".docs/"]
 
 [structure.src]
 api = {server="FastAPI server.py", routes="routes.py endpoints", version="version.py dynamic read"}
-core = {monitor="Network polling (psutil)", storage="SQLite & Peak Speed", sync="NeonDB cloud sync", device="Unique ID generation"}
+core = {monitor="Network polling (psutil), primary interface detection, catch-up logic", storage="SQLite, Peak Speed, system_state for absolute counters", sync="NeonDB cloud sync", device="Unique ID generation"}
 cli = {main="CLI interface (pb today, pb export, etc)"}
-utils = {config="TOML loader", formatters="Unit conversion", updater="Auto-check & Apply"}
+utils = {config="TOML loader", formatters="Unit conversion", updater="Auto-check & Apply + PATH/service update"}
 
 [structure.service]
-windows = ["setup.bat", "run-service.bat (launcher)", "watchdog.bat (crash recovery)"]
+windows = ["setup.bat", "run-service.bat", "launcher.py (headless runner)", "watchdog.bat (crash recovery)"]
 unix = ["setup.sh", "systemd/LaunchAgent templates"]
 
 [data_flow]
-capture = "psutil.net_io_counters() -> Delta calculation"
+capture = "psutil.net_io_counters() per interface -> Primary interface detection (gateway-based)"
 validation = "Max 1GB/s filter -> Battery-aware polling (2s on batt, 1s on AC)"
-storage = "Batch write to SQLite every 30s -> Peak speed persistent update"
+catch_up = "Boot time detection -> Absolute counter tracking -> Records usage while app was closed"
+storage = "Batch write to SQLite every 30s -> Peak speed persistent update -> system_state for restart"
 sync = "Background task uploads to NeonDB (PostgreSQL) every 60s"
 api = "FastAPI serves JSON/HTML/TOON exports on port 7373"
 
@@ -43,6 +44,12 @@ toon = "Token Optimized Object Notation (~60% smaller than markdown)"
 method = "Storage.update_peak_speed(new_speed)"
 persistence = "Saved to 'daily_aggregates' table in SQLite"
 backfill = "Service identifies missing peak speed rows and backfills from usage logs"
+
+[crash_recovery]
+watchdog = "Hourly repetition trigger in Task Scheduler ensures service restarts if crashed"
+boot_detection = "Tracks boot_time in system_state to detect system restarts"
+catch_up = "Compares current absolute counters with saved counters to record usage while app was closed"
+auto_service_reg = "During update, service is re-registered to ensure persistence"
 
 [decision_tree_for_agents]
 question = "index.toon -> quick-reference.toon"

@@ -1,8 +1,8 @@
 # PacketBuddy Architecture - TOON Format
 
 [meta]
-version = "1.4.1"
-updated = "2026-02-09"
+version = "1.4.2"
+updated = "2026-02-12"
 
 [design_principles]
 weight = "Ultra-lightweight (<40MB RAM)"
@@ -29,6 +29,13 @@ exports = "Decoupled report generation from core logic. Added TOON and HTML temp
 peak_speed = "Stateful tracking. High-water mark stored in SQLite aggregates."
 versioning = "Dynamic SSOT: src/version.py reads /VERSION at runtime to bypass Python module caching."
 neon_sync = "Batch aggregation (O(1) updates) + 5min intervals to allow serverless DB to sleep."
+
+[v1_4_2_evolution]
+crash_recovery = "Hourly watchdog via Task Scheduler repetition triggers. Service auto-restarts if crashed."
+catch_up = "Tracks absolute counters (boot_time, last_abs_sent, last_abs_received) in system_state. Calculates delta on restart."
+primary_interface = "Platform-specific detection via default gateway route (Windows: Get-NetRoute, macOS: route, Linux: ip)"
+auto_updates = "On update: runs update_path() and register_service() to refresh PATH and Task Scheduler entry"
+unicode = "Fixed encoding='utf-8', errors='replace' for Windows background process output"
 
 [network_efficiency]
 polling = "1s on AC, 2s on Battery"

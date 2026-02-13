@@ -1,10 +1,10 @@
 # PacketBuddy - AI Assistant Navigation Index (TOON)
 
 [meta]
-updated = "2026-01-28"
+updated = "2026-02-12"
 format = "TOON (Token Optimized Object Notation)"
 purpose = "Help AI assistants navigate PacketBuddy codebase efficiently"
-version = "1.4.0"
+version = "1.4.2"
 
 [start_here]
 read_first = "This file (index.toon) is the entry point for AI agents"
@@ -21,13 +21,18 @@ performance = "→ architecture.toon [performance] + quick-reference.toon [confi
 
 [project_summary]
 name = "PacketBuddy"
-version = "1.4.1"
+version = "1.4.2"
 type = "Network usage monitoring tool"
 platforms = ["Windows", "macOS", "Linux"]
 tech = ["Python 3.11+", "FastAPI", "SQLite", "NeonDB (Cloud Sync)", "psutil", "Chart.js"]
 resources = "<40MB RAM, <0.3% CPU"
 
-[v1_4_1_features]
+[v1_4_2_features]
+crash_recovery = "Hourly watchdog trigger in Task Scheduler for automatic recovery"
+catch_up_usage = "Records usage while app was closed via absolute counter tracking"
+primary_interface = "Smart detection of primary network interface (gateway-based)"
+auto_service_reg = "Automatic service registration refresh during updates"
+unicode_fixes = "Fixed Unicode encoding issues in Windows background updates"
 export_system = "Full overhaul - CSV, JSON, HTML (Year Wrap-Up), and TOON formats"
 peak_speed = "Persistent tracking across sessions with SQLite backfill"
 toon_format = "Token Optimized Object Notation for LLMs (~60% token reduction)"
