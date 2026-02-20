@@ -27,3 +27,18 @@ check_interval_hours = 6       # Check for updates every N hours (default: 6)
 auto_apply = true              # Automatically apply updates when available
 auto_restart = true            # Automatically restart service after update
 
+[storage]
+log_retention_days = 30        # Local retention for synced logs (days)
+aggregate_retention_months = 12 # Local retention for aggregates (months)
+cleanup_interval_hours = 24    # How often to run cleanup (hours)
+vacuum_after_cleanup = true    # Reclaim disk space after cleanup
+max_storage_mb = 400           # Local DB size warning threshold (MB)
+
+[storage.neon]
+# NeonDB-specific settings for free tier optimization (0.5 GB limit)
+log_retention_days = 7         # Aggressive retention to save space (days)
+aggregate_retention_months = 3 # Keep only 3 months of aggregates
+max_storage_mb = 450           # Warning threshold (under 512MB limit)
+warning_threshold_percent = 80 # Warn at 80% storage usage
+cleanup_on_sync = true         # Cleanup after each sync operation
+

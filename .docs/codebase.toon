@@ -2,8 +2,8 @@
 
 [meta]
 project = "PacketBuddy"
-version = "1.4.2"
-updated = "2026-02-12"
+version = "1.4.3"
+updated = "2026-02-20"
 type = "network_monitoring_tool"
 platforms = ["Windows", "macOS", "Linux"]
 
@@ -11,6 +11,14 @@ platforms = ["Windows", "macOS", "Linux"]
 desc = "Ultra-lightweight network usage tracker. <40MB RAM, <0.3% CPU."
 tech_stack = ["Python 3.11+", "FastAPI", "SQLite", "NeonDB (Optional Sync)", "psutil", "Chart.js"]
 v1_4_2_update = "Crash recovery with hourly watchdog, catch-up usage logic, primary interface detection, auto service registration on updates, Unicode fixes"
+v1_4_3_update = "NeonDB storage optimization with separate retention policies, VACUUM ANALYZE, crisis mode cleanup, storage monitoring API"
+
+[storage_architecture]
+local = "SQLite: 30 days synced logs, 12 months aggregates (long-term history)"
+neon = "NeonDB: 7 days logs, 3 months aggregates (free tier optimized)"
+cleanup = "Automatic periodic cleanup + manual triggers"
+vacuum = "VACUUM ANALYZE reclaims space after deletions"
+methods = {get_storage_usage="Returns MB per table", get_storage_usage_percent="% of 512MB limit", aggressive_cleanup="Emergency cleanup for storage crisis", vacuum_database="Reclaims disk space"}
 
 [structure]
 root = "packet-buddy/"
@@ -18,7 +26,7 @@ main_dirs = ["src/", "dashboard/", "service/", "scripts/", "docs/", ".docs/"]
 
 [structure.src]
 api = {server="FastAPI server.py", routes="routes.py endpoints", version="version.py dynamic read"}
-core = {monitor="Network polling (psutil), primary interface detection, catch-up logic", storage="SQLite, Peak Speed, system_state for absolute counters", sync="NeonDB cloud sync", device="Unique ID generation"}
+core = {monitor="Network polling (psutil), primary interface detection, catch-up logic", storage="SQLite + Peak Speed + system_state + cleanup/vacuum methods", sync="NeonDB sync + storage optimization + VACUUM + aggressive cleanup", device="Unique ID generation"}
 cli = {main="CLI interface (pb today, pb export, etc)"}
 utils = {config="TOML loader", formatters="Unit conversion", updater="Auto-check & Apply + PATH/service update"}
 
@@ -32,6 +40,7 @@ validation = "Max 1GB/s filter -> Battery-aware polling (2s on batt, 1s on AC)"
 catch_up = "Boot time detection -> Absolute counter tracking -> Records usage while app was closed"
 storage = "Batch write to SQLite every 30s -> Peak speed persistent update -> system_state for restart"
 sync = "Background task uploads to NeonDB (PostgreSQL) every 60s"
+cleanup = "Periodic (24h): Delete old synced logs -> Delete old aggregates -> VACUUM -> Check storage warning"
 api = "FastAPI serves JSON/HTML/TOON exports on port 7373"
 
 [v1_4_0_exports]

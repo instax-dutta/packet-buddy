@@ -1,8 +1,8 @@
 # PacketBuddy Quick Reference - TOON Format
 
 [meta]
-version = "1.4.2"
-updated = "2026-02-12"
+version = "1.4.3"
+updated = "2026-02-20"
 
 [onboarding_shortcut]
 windows = "Run setup.bat in root (as Admin)"
@@ -22,6 +22,15 @@ service_stop = "pb service stop"
 service_restart = "pb service restart"
 update = "pb update (Self-update)"
 
+[storage_commands]
+stats = "pb stats (Local database stats)"
+storage_stats = "pb storage stats (Detailed local storage info)"
+storage_neon = "pb storage neon (NeonDB storage usage and warnings)"
+storage_cleanup = "pb storage cleanup (Clean old synced logs)"
+storage_cleanup_neon = "pb storage cleanup --neon (Clean NeonDB old logs)"
+storage_cleanup_aggressive = "pb storage cleanup --neon --aggressive (Emergency cleanup)"
+neon_cleanup = "pb neon-cleanup (Quick aggressive NeonDB cleanup)"
+
 [api_endpoints]
 base = "http://127.0.0.1:7373/api"
 health = "/health"
@@ -29,6 +38,10 @@ live = "/live (Real-time speed)"
 today = "/today"
 month = "/month?month=YYYY-MM"
 export = "/export?format=csv|json|html|llm"
+
+[api_endpoints_storage]
+storage = "/api/storage (Local + NeonDB storage stats)"
+storage_cleanup = "/api/storage/cleanup?aggressive=true&vacuum=true (POST trigger cleanup)"
 
 [issue_1_windows_not_starting]
 symptom = "Dashboard won't load, API connection refused"
@@ -59,6 +72,13 @@ poll_interval = "seconds (default 1)"
 batch_write_interval = "seconds (default 30)"
 sync_enabled = "true/false"
 neondb_url = "postgresql connection string"
+
+[config_storage]
+log_retention_days = "Local: 30 days default"
+neon_log_retention_days = "NeonDB: 7 days default (free tier optimized)"
+aggregate_retention_months = "Local: 12 months"
+neon_aggregate_retention_months = "NeonDB: 3 months"
+cleanup_interval_hours = "24 hours default"
 
 [security_note]
 secrets = "NEVER push config.toml with neondb credentials. It is gitignored by default."

@@ -1,8 +1,8 @@
 # PacketBuddy Architecture - TOON Format
 
 [meta]
-version = "1.4.2"
-updated = "2026-02-12"
+version = "1.4.3"
+updated = "2026-02-20"
 
 [design_principles]
 weight = "Ultra-lightweight (<40MB RAM)"
@@ -46,6 +46,14 @@ anomalies = "Filters >1GB/s spikes (usually system wake/sleep artifacts)"
 privileges = "Task Scheduler requires highestPrivileges for network access"
 binding = "127.0.0.1 (Localhost only) for security"
 venv = "Isolated Python environment to avoid system conflicts"
+
+[storage_optimization]
+philosophy = "Local stores everything long-term. Cloud stores minimal for free tier compatibility."
+local_retention = "30 days logs (synced), 12 months aggregates"
+neon_retention = "7 days logs, 3 months aggregates (aggressive for 512MB limit)"
+vacuum = "Automatic VACUUM ANALYZE on NeonDB after cleanup to reclaim space"
+crisis_mode = "If NeonDB >80% full: reduces to 3 days logs, 1-2 months aggregates"
+preservation = "Daily/monthly aggregates ALWAYS preserved for long-term history"
 
 [ai_read_map]
 entry = ".docs/index.toon"

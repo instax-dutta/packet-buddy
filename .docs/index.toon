@@ -1,10 +1,10 @@
 # PacketBuddy - AI Assistant Navigation Index (TOON)
 
 [meta]
-updated = "2026-02-12"
+updated = "2026-02-20"
 format = "TOON (Token Optimized Object Notation)"
 purpose = "Help AI assistants navigate PacketBuddy codebase efficiently"
-version = "1.4.2"
+version = "1.4.3"
 
 [start_here]
 read_first = "This file (index.toon) is the entry point for AI agents"
@@ -21,7 +21,7 @@ performance = "→ architecture.toon [performance] + quick-reference.toon [confi
 
 [project_summary]
 name = "PacketBuddy"
-version = "1.4.2"
+version = "1.4.3"
 type = "Network usage monitoring tool"
 platforms = ["Windows", "macOS", "Linux"]
 tech = ["Python 3.11+", "FastAPI", "SQLite", "NeonDB (Cloud Sync)", "psutil", "Chart.js"]
@@ -38,6 +38,14 @@ peak_speed = "Persistent tracking across sessions with SQLite backfill"
 toon_format = "Token Optimized Object Notation for LLMs (~60% token reduction)"
 dashboard = "Liquid/Fluid UI with Glassmorphism and Year Wrap-Up integration"
 versioning = "Dynamic SSOT Versioning (Reads from VERSION file at runtime)"
+
+[v1_4_3_features]
+neon_storage = "Intelligent storage optimization for NeonDB free tier (0.5GB limit)"
+separate_retention = "Local: 30 days logs/12 months aggregates, NeonDB: 7 days logs/3 months aggregates"
+auto_vacuum = "VACUUM ANALYZE after cleanup to reclaim space"
+storage_crisis = "Automatic aggressive cleanup when storage exceeds 80%"
+storage_api = "New /api/storage and /api/storage/cleanup endpoints"
+storage_cli = "pb storage stats, pb storage neon, pb storage cleanup --neon --aggressive"
 
 [files_in_docs]
 index = {file="index.toon", desc="This file - navigation guide"}

@@ -1,7 +1,7 @@
 """SQLite storage layer for local data persistence."""
 
 import sqlite3
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from contextlib import contextmanager
@@ -335,6 +335,127 @@ class Storage:
                 INSERT OR REPLACE INTO system_state (key, value_text, value_int, updated_at)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
             """, (key, value_text, value_int))
+    
+    def cleanup_synced_logs(self, days_to_keep: int = 30) -> int:
+        """Delete synced logs older than N days. Returns count of deleted rows."""
+        cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    DELETE FROM usage_logs
+                    WHERE synced = 1 AND timestamp < ? AND device_id = ?
+                """, (cutoff_date, self.device_id))
+                return cursor.rowcount
+        except Exception:
+            return 0
+    
+    def cleanup_old_aggregates(self, months_to_keep: int = 12) -> dict:
+        """Delete aggregates older than N months. Returns counts dict."""
+        cutoff_date = date.today() - timedelta(days=months_to_keep * 30)
+        cutoff_month = cutoff_date.strftime("%Y-%m")
+        result = {'daily': 0, 'monthly': 0}
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    DELETE FROM daily_aggregates
+                    WHERE date < ? AND device_id = ?
+                """, (cutoff_date, self.device_id))
+                result['daily'] = cursor.rowcount
+                
+                cursor.execute("""
+                    DELETE FROM monthly_aggregates
+                    WHERE month < ? AND device_id = ?
+                """, (cutoff_month, self.device_id))
+                result['monthly'] = cursor.rowcount
+        except Exception:
+            pass
+        return result
+    
+    def vacuum_database(self):
+        """Run VACUUM to reclaim SQLite space after deletions."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.execute("VACUUM")
+            conn.close()
+        except Exception:
+            pass
+    
+    def get_database_stats(self) -> dict:
+        """Return comprehensive database statistics."""
+        stats = {
+            'usage_logs_count': 0,
+            'daily_aggregates_count': 0,
+            'monthly_aggregates_count': 0,
+            'synced_count': 0,
+            'unsynced_count': 0,
+            'oldest_timestamp': None,
+            'newest_timestamp': None,
+            'db_size_mb': 0.0,
+            'storage_usage_percent': 0.0
+        }
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute("SELECT COUNT(*) as count FROM usage_logs WHERE device_id = ?", (self.device_id,))
+                stats['usage_logs_count'] = cursor.fetchone()['count']
+                
+                cursor.execute("SELECT COUNT(*) as count FROM daily_aggregates WHERE device_id = ?", (self.device_id,))
+                stats['daily_aggregates_count'] = cursor.fetchone()['count']
+                
+                cursor.execute("SELECT COUNT(*) as count FROM monthly_aggregates WHERE device_id = ?", (self.device_id,))
+                stats['monthly_aggregates_count'] = cursor.fetchone()['count']
+                
+                cursor.execute("SELECT COUNT(*) as count FROM usage_logs WHERE synced = 1 AND device_id = ?", (self.device_id,))
+                stats['synced_count'] = cursor.fetchone()['count']
+                
+                cursor.execute("SELECT COUNT(*) as count FROM usage_logs WHERE synced = 0 AND device_id = ?", (self.device_id,))
+                stats['unsynced_count'] = cursor.fetchone()['count']
+                
+                cursor.execute("""
+                    SELECT MIN(timestamp) as oldest, MAX(timestamp) as newest
+                    FROM usage_logs WHERE device_id = ?
+                """, (self.device_id,))
+                row = cursor.fetchone()
+                if row and row['oldest']:
+                    stats['oldest_timestamp'] = row['oldest']
+                    stats['newest_timestamp'] = row['newest']
+            
+            if self.db_path.exists():
+                stats['db_size_mb'] = round(self.db_path.stat().st_size / (1024 * 1024), 2)
+                max_db_size = getattr(config, 'max_db_size_mb', 100)
+                stats['storage_usage_percent'] = round((stats['db_size_mb'] / max_db_size) * 100, 1)
+        except Exception:
+            pass
+        return stats
+    
+    def get_unsynced_log_count(self) -> int:
+        """Return count of logs pending sync."""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT COUNT(*) as count FROM usage_logs
+                    WHERE synced = 0 AND device_id = ?
+                """, (self.device_id,))
+                return cursor.fetchone()['count']
+        except Exception:
+            return 0
+    
+    def get_synced_log_count(self) -> int:
+        """Return count of synced logs that can be cleaned."""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT COUNT(*) as count FROM usage_logs
+                    WHERE synced = 1 AND device_id = ?
+                """, (self.device_id,))
+                return cursor.fetchone()['count']
+        except Exception:
+            return 0
 
 
 # Global storage instance

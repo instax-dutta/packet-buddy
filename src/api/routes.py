@@ -15,6 +15,7 @@ from ..core.sync import sync
 from ..core.device import get_device_info
 from ..utils.formatters import format_usage_response
 from ..utils.cost_calculator import get_cost_breakdown, DEFAULT_COST_PER_GB_INR
+from ..utils.config import config
 from ..version import get_fresh_version
 
 
@@ -26,10 +27,19 @@ async def health():
     """Service health check."""
     device_id, os_type, hostname = get_device_info()
     
-    # Combined local + global health
     device_count = 1
     if sync.enabled:
         device_count = await sync.get_device_count()
+
+    db_stats = storage.get_database_stats()
+    db_size_mb = db_stats.get('db_size_mb', 0)
+    
+    storage_cfg = getattr(config, 'storage', None)
+    max_storage_mb = getattr(storage_cfg, 'max_storage_mb', 400) if storage_cfg else 400
+    
+    storage_warning = None
+    if db_size_mb > max_storage_mb:
+        storage_warning = f"Database size ({db_size_mb}MB) exceeds limit ({max_storage_mb}MB)"
 
     return {
         "status": "running",
@@ -39,7 +49,18 @@ async def health():
         "hostname": hostname,
         "device_count": device_count,
         "sync_enabled": sync.enabled,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
+        "storage": {
+            "db_size_mb": db_size_mb,
+            "max_storage_mb": max_storage_mb,
+            "usage_logs_count": db_stats.get('usage_logs_count', 0),
+            "daily_aggregates_count": db_stats.get('daily_aggregates_count', 0),
+            "monthly_aggregates_count": db_stats.get('monthly_aggregates_count', 0),
+            "synced_count": db_stats.get('synced_count', 0),
+            "unsynced_count": db_stats.get('unsynced_count', 0),
+            "storage_usage_percent": db_stats.get('storage_usage_percent', 0),
+            "warning": storage_warning
+        }
     }
 
 
@@ -725,4 +746,122 @@ tip_5 = "Monthly and daily data use indexed format (month_0, day_0, etc.)"
             "Content-Disposition": f"attachment; filename=packetbuddy_export_{today.strftime('%Y%m%d')}.toon"
         }
     )
+
+
+@router.get("/storage")
+async def storage_info():
+    """Get comprehensive storage information for both local and NeonDB."""
+    local_stats = storage.get_database_stats()
+    
+    response = {
+        "local": {
+            "db_size_mb": local_stats.get('db_size_mb', 0),
+            "max_storage_mb": config.storage.max_storage_mb,
+            "usage_percent": local_stats.get('storage_usage_percent', 0),
+            "usage_logs_count": local_stats.get('usage_logs_count', 0),
+            "daily_aggregates_count": local_stats.get('daily_aggregates_count', 0),
+            "monthly_aggregates_count": local_stats.get('monthly_aggregates_count', 0),
+            "synced_count": local_stats.get('synced_count', 0),
+            "unsynced_count": local_stats.get('unsynced_count', 0),
+            "oldest_log": local_stats.get('oldest_timestamp'),
+            "newest_log": local_stats.get('newest_timestamp'),
+        },
+        "neon": None,
+        "retention": {
+            "local_log_days": config.storage.log_retention_days,
+            "local_aggregate_months": config.storage.aggregate_retention_months,
+            "neon_log_days": config.storage.neon.neon_log_retention_days if hasattr(config.storage, 'neon') else 7,
+            "neon_aggregate_months": config.storage.neon.neon_aggregate_retention_months if hasattr(config.storage, 'neon') else 3,
+        }
+    }
+    
+    if sync.enabled:
+        try:
+            neon_storage = await sync.get_storage_usage()
+            neon_usage_percent = await sync.get_storage_usage_percent()
+            neon_stats = await sync.get_remote_stats()
+            
+            neon_config = getattr(config.storage, 'neon', None)
+            warning_threshold = neon_config.neon_storage_warning_threshold if neon_config else 80
+            max_storage_mb = neon_config.neon_max_storage_mb if neon_config else 450
+            
+            response["neon"] = {
+                "total_mb": neon_storage.get("total_mb", 0),
+                "max_storage_mb": max_storage_mb,
+                "usage_percent": neon_usage_percent,
+                "free_tier_limit_mb": 512,
+                "warning_threshold_percent": warning_threshold,
+                "tables": neon_storage.get("tables", {}),
+                "device_count": neon_stats.get("device_count", 0),
+                "log_count": neon_stats.get("log_count", 0),
+                "oldest_log": neon_stats.get("oldest_log"),
+                "newest_log": neon_stats.get("newest_log"),
+                "logs_per_device": neon_stats.get("logs_per_device", []),
+            }
+            
+            if neon_usage_percent >= warning_threshold:
+                response["neon"]["warning"] = f"NeonDB storage at {neon_usage_percent}% - consider cleanup"
+            if neon_usage_percent >= 90:
+                response["neon"]["critical"] = f"NeonDB storage CRITICAL at {neon_usage_percent}% - immediate cleanup recommended"
+                
+        except Exception as e:
+            response["neon"] = {"error": str(e)}
+    
+    return response
+
+
+@router.post("/storage/cleanup")
+async def trigger_cleanup(
+    aggressive: bool = Query(False, description="Run aggressive cleanup for storage crisis"),
+    vacuum: bool = Query(True, description="Run VACUUM after cleanup")
+):
+    """Manually trigger storage cleanup for both local and NeonDB."""
+    results = {
+        "local": {"logs_deleted": 0, "aggregates_deleted": {}},
+        "neon": None,
+        "vacuum_run": False
+    }
+    
+    try:
+        deleted_logs = storage.cleanup_synced_logs(config.storage.log_retention_days)
+        deleted_aggregates = storage.cleanup_old_aggregates(config.storage.aggregate_retention_months)
+        results["local"] = {
+            "logs_deleted": deleted_logs,
+            "aggregates_deleted": deleted_aggregates
+        }
+        
+        if vacuum:
+            storage.vacuum_database()
+            results["vacuum_run"] = True
+    except Exception as e:
+        results["local"]["error"] = str(e)
+    
+    if sync.enabled:
+        try:
+            neon_config = getattr(config.storage, 'neon', None)
+            neon_log_days = neon_config.neon_log_retention_days if neon_config else 7
+            neon_agg_months = neon_config.neon_aggregate_retention_months if neon_config else 3
+            
+            if aggressive:
+                neon_results = await sync.aggressive_cleanup()
+            else:
+                neon_deleted = await sync.cleanup_old_logs(neon_log_days)
+                neon_aggregates = await sync.cleanup_old_aggregates(neon_agg_months)
+                neon_results = {
+                    "logs_deleted": neon_deleted,
+                    "aggregates_deleted": neon_aggregates,
+                    "vacuum_run": False
+                }
+            
+            if vacuum:
+                neon_results["vacuum_run"] = await sync.vacuum_database()
+            
+            results["neon"] = neon_results
+            
+            results["neon"]["storage_after_percent"] = await sync.get_storage_usage_percent()
+            
+        except Exception as e:
+            results["neon"] = {"error": str(e)}
+    
+    return results
 
