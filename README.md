@@ -1,13 +1,27 @@
 # PacketBuddy - Network Usage & Bandwidth Tracker
 
-<img src="packet-buddy-logo.png" alt="PacketBuddy Logo" width="200">
+<p align="center">
+  <img src="packet-buddy-logo.png" alt="PacketBuddy Logo" width="400">
+</p>
 
-**Free, privacy-focused internet usage monitoring for everyone. See EXACTLY how much data you use, when, and how — the data ISPs, OS vendors, and app developers never show you.**
+<p align="center">
+  <strong>Free, privacy-focused internet usage monitoring for everyone. See EXACTLY how much data you use, when, and how — the data ISPs, OS vendors, and app developers never show you.</strong>
+</p>
 
-[![Version](https://img.shields.io/badge/version-1.4.3-brightgreen?style=flat-square)](https://github.com/instax-dutta/packet-buddy)
-[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![Free Forever](https://img.shields.io/badge/price-FREE-blue?style=flat-square)](https://github.com/instax-dutta/packet-buddy)
-[![Privacy First](https://img.shields.io/badge/privacy-local--first-purple?style=flat-square)](https://github.com/instax-dutta/packet-buddy)
+<p align="center">
+  <a href="https://github.com/instax-dutta/packet-buddy">
+    <img src="https://img.shields.io/badge/version-1.4.3-brightgreen?style=flat-square" alt="Version">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License">
+  </a>
+  <a href="https://github.com/instax-dutta/packet-buddy">
+    <img src="https://img.shields.io/badge/price-FREE-blue?style=flat-square" alt="Free Forever">
+  </a>
+  <a href="https://github.com/instax-dutta/packet-buddy">
+    <img src="https://img.shields.io/badge/privacy-local--first-purple?style=flat-square" alt="Privacy First">
+  </a>
+</p>
 
 ---
 
@@ -41,7 +55,9 @@
 
 ## 📸 Screenshots
 
-![PacketBuddy Dashboard Showcase](assets/image.png)
+<p align="center">
+  <img src="assets/image.png" alt="PacketBuddy Dashboard Showcase" width="800">
+</p>
 
 ---
 
@@ -115,6 +131,10 @@ After installation, use the `pb` command:
 
 ---
 
-**Made with ❤️ for the internet community**
+<p align="center">
+  <strong>Made with ❤️ for the internet community</strong>
+</p>
 
-[Full Wiki](https://github.com/instax-dutta/packet-buddy/wiki) | [Bug Reports](https://github.com/instax-dutta/packet-buddy/issues)
+<p align="center">
+  <a href="https://github.com/instax-dutta/packet-buddy/wiki">Full Wiki</a> • <a href="https://github.com/instax-dutta/packet-buddy/issues">Bug Reports</a>
+</p>
