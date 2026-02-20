@@ -57,3 +57,12 @@ logs/
 .env.local
 .agent
 docs/
+
+# Windows Desktop App Build (Future)
+windows-app-build/
+dist-windows/
+dist-installer/
+*.exe
+*.msi
+*.msix
+installer/PacketBuddy-Setup-*.exe

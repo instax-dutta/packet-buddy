@@ -1,8 +1,8 @@
 # PacketBuddy - Network Usage & Bandwidth Tracker
 
-**Free, privacy-focused internet usage monitoring for everyone. See EXACTLY how much data you use, when, and how — the data ISPs, OS vendors, and app developers never show you.**
+<img src="packet-buddy-logo.png" alt="PacketBuddy Logo" width="200">
 
-![PacketBuddy Dashboard Showcase](assets/image.png)
+**Free, privacy-focused internet usage monitoring for everyone. See EXACTLY how much data you use, when, and how — the data ISPs, OS vendors, and app developers never show you.**
 
 [![Version](https://img.shields.io/badge/version-1.4.3-brightgreen?style=flat-square)](https://github.com/instax-dutta/packet-buddy)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
@@ -36,6 +36,12 @@
 | 📅 **Long-Term Storage** | Years of usage history preserved locally with intelligent aggregation. |
 | ⚡ **Zero Configuration** | Works out of the box. No setup wizards, no complicated settings. |
 | 🖥️ **Cross-Platform** | Native support for Windows, macOS, and Linux. |
+
+---
+
+## 📸 Screenshots
+
+![PacketBuddy Dashboard Showcase](assets/image.png)
 
 ---
 
