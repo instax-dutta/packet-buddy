@@ -1,7 +1,7 @@
 # PacketBuddy - Network Usage & Bandwidth Tracker
 
 <p align="center">
-  <img src="packet-buddy-logo.png" alt="PacketBuddy Logo" width="400">
+  <img src="packet-buddy-logo.png" alt="PacketBuddy Logo" width="600">
 </p>
 
 <p align="center">
