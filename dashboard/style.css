@@ -382,6 +382,19 @@ body {
     box-shadow: 0 0 15px hsl(var(--primary) / 0.3);
 }
 
+.speed-chart-container {
+    height: 140px;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid hsl(var(--border) / 0.2);
+    position: relative;
+}
+
+.speed-chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 .total-row {
     padding-top: 1.75rem;
     border-top: 1px solid hsl(var(--border) / 0.3);
@@ -405,19 +418,111 @@ body {
 
 .cost-row {
     margin-top: 1.25rem;
-    padding: 1.25rem;
-    background: hsl(var(--muted) / 0.3);
+    padding: 0;
+    background: linear-gradient(135deg, hsl(var(--muted) / 0.4), hsl(var(--card) / 0.6));
     border-radius: var(--radius);
+    display: flex;
+    align-items: stretch;
+    border: 1px solid hsl(var(--border) / 0.25);
+    overflow: hidden;
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cost-row::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            hsl(var(--accent) / 0.04) 40%,
+            hsl(var(--accent) / 0.08) 50%,
+            hsl(var(--accent) / 0.04) 60%,
+            transparent 100%);
+    background-size: 200% 100%;
+    animation: cost-shimmer 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.cost-row:hover {
+    border-color: hsl(var(--accent) / 0.4);
+    box-shadow: 0 4px 20px hsl(var(--accent) / 0.1);
+    transform: translateY(-2px);
+}
+
+.cost-row.lifetime:hover {
+    border-color: hsl(var(--primary) / 0.4);
+    box-shadow: 0 4px 20px hsl(var(--primary) / 0.1);
+}
+
+.cost-accent-bar {
+    width: 5px;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, hsl(var(--accent)), hsl(var(--accent) / 0.3));
+    border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.cost-row.lifetime .cost-accent-bar {
+    background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary) / 0.3));
+}
+
+.cost-main {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    position: relative;
+    z-index: 1;
+}
+
+.cost-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid hsl(var(--border) / 0.2);
 }
 
 .cost-value {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     font-weight: 900;
     color: hsl(var(--accent));
+    letter-spacing: -0.5px;
+    text-shadow: 0 0 20px hsl(var(--accent) / 0.25);
+    transition: all 0.3s ease;
+}
+
+.cost-row.lifetime .cost-value {
+    color: hsl(var(--primary));
+    text-shadow: 0 0 20px hsl(var(--primary) / 0.25);
+}
+
+.cost-row:hover .cost-value {
+    text-shadow: 0 0 30px hsl(var(--accent) / 0.4);
+}
+
+.cost-row.lifetime:hover .cost-value {
+    text-shadow: 0 0 30px hsl(var(--primary) / 0.4);
+}
+
+.cost-note {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: hsl(var(--muted-foreground));
+    padding: 0.2rem 0.65rem;
+    background: hsl(var(--muted) / 0.5);
+    border-radius: 100px;
+    letter-spacing: 0.5px;
+}
+
+@keyframes cost-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
 }
 
 .charts-grid {

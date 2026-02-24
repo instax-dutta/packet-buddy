@@ -66,3 +66,12 @@ dist-installer/
 *.msi
 *.msix
 installer/PacketBuddy-Setup-*.exe
+telemetry-id
+nul
+
+# Service runtime
+service_stdout.log
+service_stderr.log
+
+# Design system output
+design-system/

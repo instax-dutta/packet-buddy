@@ -4,10 +4,20 @@ const API_BASE = 'http://127.0.0.1:7373/api';
 
 let monthlyChart = null;
 let pieChart = null;
+let speedChart = null;
 let currentMonth = new Date();
 currentMonth.setDate(1); // Fix: Set to 1st of month to avoid rollover bugs when navigating from 31st
 let peakSpeed = 0;
 let refreshIntervals = [];
+
+// Rolling speed data buffer (30 points = ~60s at 2s interval)
+const SPEED_BUFFER_SIZE = 30;
+let speedLabels = [];
+let uploadSpeedData = [];
+let downloadSpeedData = [];
+
+// Register datalabels plugin globally
+Chart.register(ChartDataLabels);
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -155,6 +165,21 @@ async function loadLiveStats() {
             document.getElementById('peak-speed').textContent = formatBytes(peakSpeed) + '/s';
         }
 
+        // Push to speed chart buffer
+        const now = new Date();
+        const timeLabel = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        speedLabels.push(timeLabel);
+        uploadSpeedData.push(uploadSpeed);
+        downloadSpeedData.push(downloadSpeed);
+
+        // Trim buffer
+        if (speedLabels.length > SPEED_BUFFER_SIZE) {
+            speedLabels.shift();
+            uploadSpeedData.shift();
+            downloadSpeedData.shift();
+        }
+
+        updateSpeedChart();
         updateLastUpdate();
     } catch (error) {
         console.error('Failed to load live stats:', error);
@@ -335,7 +360,8 @@ function initCharts() {
                     backgroundColor: 'hsla(340, 60%, 60%, 0.8)',
                     borderColor: accentPink,
                     borderWidth: 0,
-                    borderRadius: 6
+                    borderRadius: 6,
+                    datalabels: { display: false }
                 },
                 {
                     label: 'Download',
@@ -343,7 +369,8 @@ function initCharts() {
                     backgroundColor: 'hsla(170, 70%, 42%, 0.8)',
                     borderColor: primaryTeal,
                     borderWidth: 0,
-                    borderRadius: 6
+                    borderRadius: 6,
+                    datalabels: { display: false }
                 }
             ]
         },
@@ -381,8 +408,119 @@ function initCharts() {
         }
     });
 
-    // Pie chart
+    // Live Speed chart
+    const speedCtx = document.getElementById('speed-chart').getContext('2d');
+
+    // Create gradient fills for speed chart
+    const uploadGradient = speedCtx.createLinearGradient(0, 0, 0, 140);
+    uploadGradient.addColorStop(0, 'hsla(340, 60%, 60%, 0.35)');
+    uploadGradient.addColorStop(1, 'hsla(340, 60%, 60%, 0)');
+
+    const downloadGradient = speedCtx.createLinearGradient(0, 0, 0, 140);
+    downloadGradient.addColorStop(0, 'hsla(170, 70%, 42%, 0.35)');
+    downloadGradient.addColorStop(1, 'hsla(170, 70%, 42%, 0)');
+
+    speedChart = new Chart(speedCtx, {
+        type: 'line',
+        data: {
+            labels: speedLabels,
+            datasets: [
+                {
+                    label: 'Upload',
+                    data: uploadSpeedData,
+                    borderColor: accentPink,
+                    backgroundColor: uploadGradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointHoverBackgroundColor: accentPink,
+                    datalabels: { display: false }
+                },
+                {
+                    label: 'Download',
+                    data: downloadSpeedData,
+                    borderColor: primaryTeal,
+                    backgroundColor: downloadGradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointHoverBackgroundColor: primaryTeal,
+                    datalabels: { display: false }
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    ...commonOptions.plugins.tooltip,
+                    callbacks: {
+                        label: function (context) {
+                            return context.dataset.label + ': ' + formatBytes(context.parsed.y) + '/s';
+                        }
+                    }
+                },
+                datalabels: { display: false }
+            },
+            scales: {
+                x: {
+                    display: false
+                },
+                y: {
+                    display: false,
+                    beginAtZero: true
+                }
+            },
+            animation: {
+                duration: 400,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+
+    // Pie chart with datalabels
     const pieCtx = document.getElementById('pie-chart').getContext('2d');
+
+    // Center text plugin
+    const centerTextPlugin = {
+        id: 'centerText',
+        afterDraw(chart) {
+            if (chart.config.type !== 'doughnut') return;
+            const { ctx, width, height } = chart;
+            const dataset = chart.data.datasets[0];
+            const total = dataset.data.reduce((a, b) => a + b, 0);
+            if (total === 0) return;
+
+            ctx.save();
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            // "TODAY" label
+            ctx.font = "700 0.7rem 'Nunito', sans-serif";
+            ctx.fillStyle = 'hsl(200, 15%, 55%)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('TODAY', centerX, centerY - 14);
+
+            // Total value
+            ctx.font = "900 1.1rem 'Nunito', sans-serif";
+            ctx.fillStyle = 'hsl(200, 25%, 90%)';
+            ctx.fillText(formatBytes(total), centerX, centerY + 10);
+
+            ctx.restore();
+        }
+    };
+
     pieChart = new Chart(pieCtx, {
         type: 'doughnut',
         data: {
@@ -394,14 +532,50 @@ function initCharts() {
                     primaryTeal
                 ],
                 borderWidth: 0,
-                hoverOffset: 15
+                hoverOffset: 10
             }]
         },
+        plugins: [centerTextPlugin],
         options: {
-            ...commonOptions,
-            cutout: '75%',
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            layout: {
+                padding: 20
+            },
             plugins: {
-                ...commonOptions.plugins
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    ...commonOptions.plugins.tooltip
+                },
+                datalabels: {
+                    display: function (context) {
+                        const dataset = context.dataset;
+                        const total = dataset.data.reduce((a, b) => a + b, 0);
+                        if (total === 0) return false;
+                        const value = dataset.data[context.dataIndex];
+                        const percent = (value / total) * 100;
+                        return percent >= 2;
+                    },
+                    color: '#fff',
+                    font: {
+                        family: "'Nunito', sans-serif",
+                        size: 13,
+                        weight: '800'
+                    },
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: function (value, context) {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        if (total === 0) return '';
+                        const percent = ((value / total) * 100).toFixed(1);
+                        return percent + '%';
+                    },
+                    textShadowBlur: 6,
+                    textShadowColor: 'rgba(0,0,0,0.5)'
+                }
             }
         }
     });
@@ -421,6 +595,15 @@ function updateMonthlyChart(days) {
     monthlyChart.data.datasets[0].data = uploadData;
     monthlyChart.data.datasets[1].data = downloadData;
     monthlyChart.update('active');
+}
+
+// Update speed chart
+function updateSpeedChart() {
+    if (!speedChart) return;
+    speedChart.data.labels = speedLabels;
+    speedChart.data.datasets[0].data = uploadSpeedData;
+    speedChart.data.datasets[1].data = downloadSpeedData;
+    speedChart.update('none');
 }
 
 // Update pie chart
