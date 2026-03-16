@@ -89,9 +89,6 @@ async def today():
     # Add global today stats if enabled
     if sync.enabled:
         global_sent, global_received = await sync.get_global_today_usage()
-        # Ensure global is at least as much as local
-        global_sent = max(global_sent, bytes_sent)
-        global_received = max(global_received, bytes_received)
         
         response["global"] = format_usage_response(global_sent, global_received)
         response["global"]["cost"] = get_cost_breakdown(global_sent, global_received)
@@ -171,9 +168,6 @@ async def summary():
     # Add global lifetime stats if enabled
     if sync.enabled:
         global_sent, global_received = await sync.get_global_lifetime_usage()
-        # Merge local and global
-        global_sent = max(global_sent, bytes_sent)
-        global_received = max(global_received, bytes_received)
         
         response["global"] = format_usage_response(global_sent, global_received)
         response["global"]["cost"] = get_cost_breakdown(global_sent, global_received)
