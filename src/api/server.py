@@ -18,6 +18,7 @@ from ..core.monitor import monitor
 from ..core.sync import sync
 from ..core.storage import storage
 from ..utils.updater import auto_update_check
+from ..version import get_version
 from .routes import router
 
 
@@ -25,7 +26,7 @@ from .routes import router
 app = FastAPI(
     title="PacketBuddy API",
     description="Ultra-lightweight network usage tracking",
-    version="1.4.3"
+    version=get_version()
 )
 
 # Enable CORS
