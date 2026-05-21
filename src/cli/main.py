@@ -270,7 +270,7 @@ def storage_cleanup(days, vacuum, dry_run, neon, aggressive):
         
         click.echo(f"\n{click.style('NeonDB Aggressive Cleanup', fg='red', bold=True)}")
         click.echo("   This will reduce retention to minimal levels")
-        click.echo("   Logs: 3 days | Daily aggregates: 1 month | Monthly aggregates: 2 months")
+        click.echo("   Daily aggregates: 1 month | Monthly aggregates: 2 months")
         click.echo()
         
         results, usage_before, usage_after = asyncio.run(do_aggressive_neon_cleanup())
@@ -279,11 +279,11 @@ def storage_cleanup(days, vacuum, dry_run, neon, aggressive):
             click.echo(f"\n{E_ERROR} Cleanup failed: {usage_after}")
             return
         
-        click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {results['logs_deleted']} log entries")
-        click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {results['aggregates_deleted']['daily']} daily aggregates")
-        click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {results['aggregates_deleted']['monthly']} monthly aggregates")
+        d = results.get('aggregates_deleted', {})
+        click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {d.get('daily', 0)} daily aggregates")
+        click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {d.get('monthly', 0)} monthly aggregates")
         
-        if results['vacuum_run']:
+        if results.get('vacuum_run'):
             click.echo(f"   {click.style(E_CHECK, fg='green')} VACUUM ANALYZE completed")
         
         freed = usage_before - usage_after
@@ -501,93 +501,24 @@ def storage_neon():
 @click.option("--days", default=None, help="Days to keep synced logs (default from config)")
 @click.option("--vacuum/--no-vacuum", default=None, help="Run VACUUM after cleanup")
 @click.option("--dry-run", is_flag=True, help="Show what would be deleted without deleting")
-def cleanup(days, vacuum, dry_run):
-    """Clean up old synced log entries to free storage space."""
-    from datetime import datetime, timedelta
+@click.pass_context
+def cleanup(ctx, days, vacuum, dry_run):
+    """Clean up old synced log entries to free storage space.
     
-    days_to_keep = days if days is not None else config.storage.log_retention_days
-    should_vacuum = vacuum if vacuum is not None else config.storage.vacuum_after_cleanup
-    
-    cutoff_date = datetime.now() - timedelta(days=days_to_keep)
-    
-    click.echo(f"\n{click.style('Storage Cleanup', fg='cyan', bold=True)}")
-    click.echo(f"   Retention: {days_to_keep} days")
-    click.echo(f"   Cutoff date: {cutoff_date.strftime('%Y-%m-%d %H:%M')}")
-    click.echo(f"   Mode: {'dry run (no changes)' if dry_run else 'live'}")
-    click.echo()
-    
-    try:
-        if dry_run:
-            synced_count = db.get_synced_log_count()
-            click.echo(f"   Synced logs that would be deleted: {click.style(str(synced_count), fg='yellow')}")
-            if should_vacuum:
-                click.echo(f"   VACUUM would run after cleanup")
-            click.echo(f"\n{click.style('Dry run complete. No changes made.', fg='green')}")
-            return
-        
-        click.echo("   Cleaning up synced logs...")
-        deleted_logs = db.cleanup_synced_logs(days_to_keep)
-        click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {deleted_logs} synced log entries")
-        
-        click.echo("   Cleaning up old aggregates...")
-        deleted_aggregates = db.cleanup_old_aggregates(config.storage.aggregate_retention_months)
-        click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {deleted_aggregates['daily']} daily aggregates")
-        click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {deleted_aggregates['monthly']} monthly aggregates")
-        
-        if should_vacuum:
-            click.echo("   Running VACUUM to reclaim space...")
-            db.vacuum_database()
-            click.echo(f"   {click.style(E_CHECK, fg='green')} VACUUM completed")
-        
-        click.echo(f"\n{click.style('Cleanup complete!', fg='green', bold=True)}")
-        
-    except Exception as e:
-        click.echo(f"\n{click.style(f'{E_ERROR} Error during cleanup:', fg='red')} {e}")
+    Delegates to 'pb storage cleanup' — use that for additional options
+    like --neon and --aggressive.
+    """
+    ctx.invoke(storage_cleanup, days=days, vacuum=vacuum, dry_run=dry_run, neon=False, aggressive=False)
 
 
 @cli.command()
-def stats():
-    """Show database storage statistics."""
-    try:
-        stats_data = db.get_database_stats()
-        
-        click.echo(f"\n{click.style('Database Statistics', fg='cyan', bold=True)}\n")
-        
-        table = [
-            ["Usage Logs", f"{stats_data['usage_logs_count']:,}"],
-            ["Daily Aggregates", f"{stats_data['daily_aggregates_count']:,}"],
-            ["Monthly Aggregates", f"{stats_data['monthly_aggregates_count']:,}"],
-            ["Synced Logs", f"{click.style(str(stats_data['synced_count']), fg='green')}"],
-            ["Unsynced Logs", f"{click.style(str(stats_data['unsynced_count']), fg='yellow')}"],
-        ]
-        
-        click.echo(tabulate(table, headers=["Table", "Count"], tablefmt=TABLE_FMT))
-        
-        click.echo(f"\n{click.style('Timestamps', fg='cyan', bold=True)}")
-        if stats_data['oldest_timestamp']:
-            click.echo(f"   Oldest log: {stats_data['oldest_timestamp']}")
-            click.echo(f"   Newest log: {stats_data['newest_timestamp']}")
-        else:
-            click.echo("   No logs recorded yet")
-        
-        click.echo(f"\n{click.style('Storage', fg='cyan', bold=True)}")
-        click.echo(f"   Database size: {stats_data['db_size_mb']} MB")
-        
-        if stats_data['storage_usage_percent'] >= 80:
-            usage_style = {'fg': 'red', 'bold': True}
-            warning = f" {click.style(f'{E_WARN} WARNING: High storage usage!', fg='red')}"
-        elif stats_data['storage_usage_percent'] >= 60:
-            usage_style = {'fg': 'yellow'}
-            warning = ""
-        else:
-            usage_style = {'fg': 'green'}
-            warning = ""
-        
-        usage_pct = click.style(f"{stats_data['storage_usage_percent']}%", **usage_style)
-        click.echo(f"   Storage usage: {usage_pct}{warning}")
-        
-    except Exception as e:
-        click.echo(f"\n{click.style(f'{E_ERROR} Error getting stats:', fg='red')} {e}")
+@click.pass_context
+def stats(ctx):
+    """Show database storage statistics.
+    
+    Delegates to 'pb storage stats'.
+    """
+    ctx.invoke(storage_stats)
 
 
 @cli.command(name="neon-cleanup")
@@ -614,7 +545,7 @@ def neon_cleanup():
     
     click.echo(f"\n{click.style('NeonDB Aggressive Cleanup', fg='red', bold=True)}")
     click.echo("   This will reduce retention to minimal levels")
-    click.echo("   Logs: 3 days | Daily aggregates: 1 month | Monthly aggregates: 2 months")
+    click.echo("   Daily aggregates: 1 month | Monthly aggregates: 2 months")
     click.echo()
     
     results, usage_before, usage_after = asyncio.run(do_aggressive_cleanup())
@@ -627,11 +558,11 @@ def neon_cleanup():
         click.echo(f"\n{E_ERROR} Cleanup failed: Unknown error")
         return
     
-    click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {results['logs_deleted']} log entries")
-    click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {results['aggregates_deleted']['daily']} daily aggregates")
-    click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {results['aggregates_deleted']['monthly']} monthly aggregates")
+    d = results.get('aggregates_deleted', {})
+    click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {d.get('daily', 0)} daily aggregates")
+    click.echo(f"   {click.style(E_CHECK, fg='green')} Deleted {d.get('monthly', 0)} monthly aggregates")
     
-    if results['vacuum_run']:
+    if results.get('vacuum_run'):
         click.echo(f"   {click.style(E_CHECK, fg='green')} VACUUM ANALYZE completed")
     
     freed = usage_before - usage_after

@@ -1,10 +1,13 @@
 """SQLite storage layer for local data persistence."""
 
+import logging
 import sqlite3
 from datetime import datetime, date, timedelta
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from contextlib import contextmanager
+
+logger = logging.getLogger(__name__)
 
 from ..utils.config import config
 from .device import get_device_info
@@ -25,10 +28,11 @@ class Storage:
         conn.row_factory = sqlite3.Row
         try:
             yield conn
-            conn.commit()
         except Exception:
             conn.rollback()
             raise
+        else:
+            conn.commit()
         finally:
             conn.close()
     
@@ -290,6 +294,18 @@ class Storage:
             
             return [dict(row) for row in cursor.fetchall()]
     
+    def get_all_monthly_aggregates(self) -> List[Dict]:
+        """Get all monthly aggregates for NeonDB sync."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT device_id, month, bytes_sent, bytes_received
+                FROM monthly_aggregates
+                WHERE device_id = ?
+                ORDER BY month ASC
+            """, (self.device_id,))
+            return [dict(row) for row in cursor.fetchall()]
+
     def get_overall_peak_speed(self) -> int:
         """Get the highest peak speed ever recorded."""
         with self.get_connection() as conn:
@@ -348,8 +364,28 @@ class Storage:
                 """, (cutoff_date, self.device_id))
                 return cursor.rowcount
         except Exception:
+            logger.warning("Failed to cleanup synced logs", exc_info=True)
             return 0
-    
+
+    def cleanup_all_old_logs(self, days_to_keep: int = 7) -> int:
+        """Delete ALL old raw logs (regardless of sync status) older than N days.
+        
+        Since raw logs are no longer synced to NeonDB for free-tier optimization,
+        the `synced` flag stays 0. This method cleans them unconditionally.
+        """
+        cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    DELETE FROM usage_logs
+                    WHERE timestamp < ? AND device_id = ?
+                """, (cutoff_date, self.device_id))
+                return cursor.rowcount
+        except Exception:
+            logger.warning("Failed to cleanup old logs", exc_info=True)
+            return 0
+
     def cleanup_old_aggregates(self, months_to_keep: int = 12) -> dict:
         """Delete aggregates older than N months. Returns counts dict."""
         cutoff_date = date.today() - timedelta(days=months_to_keep * 30)
@@ -370,17 +406,16 @@ class Storage:
                 """, (cutoff_month, self.device_id))
                 result['monthly'] = cursor.rowcount
         except Exception:
-            pass
+            logger.warning("Failed to cleanup old aggregates", exc_info=True)
         return result
     
     def vacuum_database(self):
         """Run VACUUM to reclaim SQLite space after deletions."""
         try:
-            conn = sqlite3.connect(self.db_path)
-            conn.execute("VACUUM")
-            conn.close()
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("VACUUM")
         except Exception:
-            pass
+            logger.warning("VACUUM failed", exc_info=True)
     
     def get_database_stats(self) -> dict:
         """Return comprehensive database statistics."""
@@ -428,7 +463,7 @@ class Storage:
                 max_db_size = getattr(config, 'max_db_size_mb', 100)
                 stats['storage_usage_percent'] = round((stats['db_size_mb'] / max_db_size) * 100, 1)
         except Exception:
-            pass
+            logger.warning("Failed to get database stats", exc_info=True)
         return stats
     
     def get_unsynced_log_count(self) -> int:
@@ -442,6 +477,7 @@ class Storage:
                 """, (self.device_id,))
                 return cursor.fetchone()['count']
         except Exception:
+            logger.warning("Failed to get unsynced log count", exc_info=True)
             return 0
     
     def get_synced_log_count(self) -> int:
@@ -455,7 +491,76 @@ class Storage:
                 """, (self.device_id,))
                 return cursor.fetchone()['count']
         except Exception:
+            logger.warning("Failed to get synced log count", exc_info=True)
             return 0
+
+    def get_all_export_stats(self) -> dict:
+        """Get all data needed for exports in a single connection.
+
+        Combines 5 separate queries into one connection to reduce overhead.
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT date, bytes_sent, bytes_received, peak_speed
+                FROM daily_aggregates
+                WHERE device_id = ?
+                ORDER BY date ASC
+            """, (self.device_id,))
+            daily_data = [dict(row) for row in cursor.fetchall()]
+
+            cursor.execute("""
+                SELECT
+                    strftime('%Y-%m', date) as month,
+                    SUM(bytes_sent) as bytes_sent,
+                    SUM(bytes_received) as bytes_received,
+                    MAX(peak_speed) as peak_speed,
+                    COUNT(*) as days_tracked
+                FROM daily_aggregates
+                WHERE device_id = ?
+                GROUP BY strftime('%Y-%m', date)
+                ORDER BY month ASC
+            """, (self.device_id,))
+            monthly_summaries = [dict(row) for row in cursor.fetchall()]
+
+            cursor.execute("""
+                SELECT
+                    COALESCE(SUM(bytes_sent), 0) as total_sent,
+                    COALESCE(SUM(bytes_received), 0) as total_received
+                FROM daily_aggregates
+                WHERE device_id = ?
+            """, (self.device_id,))
+            row = cursor.fetchone()
+            total_sent = row["total_sent"]
+            total_received = row["total_received"]
+
+            cursor.execute("""
+                SELECT MAX(peak_speed) as max_peak
+                FROM daily_aggregates
+                WHERE device_id = ?
+            """, (self.device_id,))
+            row = cursor.fetchone()
+            overall_peak = row["max_peak"] if row and row["max_peak"] else 0
+
+            cursor.execute("""
+                SELECT
+                    MIN(date) as first_tracked_date,
+                    MAX(date) as last_tracked_date,
+                    COUNT(DISTINCT date) as total_days_tracked
+                FROM daily_aggregates
+                WHERE device_id = ?
+            """, (self.device_id,))
+            tracking_stats = dict(cursor.fetchone() or {})
+
+            return {
+                "daily_data": daily_data,
+                "monthly_summaries": monthly_summaries,
+                "total_sent": total_sent,
+                "total_received": total_received,
+                "overall_peak": overall_peak,
+                "tracking_stats": tracking_stats,
+            }
 
 
 # Global storage instance

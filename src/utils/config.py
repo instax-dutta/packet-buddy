@@ -9,12 +9,17 @@ import tomli
 
 @dataclass
 class NeonStorageConfig:
-    """NeonDB-specific storage configuration for free tier limits."""
-    neon_log_retention_days: int = 7
-    neon_aggregate_retention_months: int = 3
+    """NeonDB-specific storage configuration for free tier limits.
+
+    Free tier hard limits: 0.5 GB storage, 100 CU-hours/month, 5 GB egress.
+    Raw usage_logs are no longer synced to NeonDB (saves 90%+ storage).
+    Only aggregates (daily + monthly) are stored remotely — ~0.01% the data volume.
+    """
+    neon_log_retention_days: int = 1
+    neon_aggregate_retention_months: int = 6
     neon_max_storage_mb: int = 450
-    neon_storage_warning_threshold: int = 80
-    neon_cleanup_on_sync: bool = True
+    neon_storage_warning_threshold: int = 70
+    neon_cleanup_on_sync: bool = False
 
 
 @dataclass
@@ -72,17 +77,17 @@ class Config:
                 "auto_restart": True,
             },
             "storage": {
-                "log_retention_days": 30,
+                "log_retention_days": 7,
                 "aggregate_retention_months": 12,
                 "cleanup_interval_hours": 24,
                 "vacuum_after_cleanup": True,
                 "max_storage_mb": 400,
                 "neon": {
-                    "log_retention_days": 7,
-                    "aggregate_retention_months": 3,
+                    "log_retention_days": 1,
+                    "aggregate_retention_months": 6,
                     "max_storage_mb": 450,
-                    "warning_threshold_percent": 80,
-                    "cleanup_on_sync": True,
+                    "warning_threshold_percent": 70,
+                    "cleanup_on_sync": False,
                 },
             }
         }
@@ -96,24 +101,25 @@ class Config:
         return default_config
     
     def _load_storage_config(self) -> StorageConfig:
-        """Load storage configuration from config dict."""
+        """Load storage configuration from config dict.
+
+        Uses dataclass defaults as the SSOT, then overrides from config file.
+        This ensures free-tier-optimized defaults are always in effect.
+        """
         storage_cfg = self.config.get("storage", {})
         neon_cfg = storage_cfg.get("neon", {})
-        neon_config = NeonStorageConfig(
-            neon_log_retention_days=neon_cfg.get("log_retention_days", 7),
-            neon_aggregate_retention_months=neon_cfg.get("aggregate_retention_months", 3),
-            neon_max_storage_mb=neon_cfg.get("max_storage_mb", 450),
-            neon_storage_warning_threshold=neon_cfg.get("warning_threshold_percent", 80),
-            neon_cleanup_on_sync=neon_cfg.get("cleanup_on_sync", True),
-        )
-        return StorageConfig(
-            log_retention_days=storage_cfg.get("log_retention_days", 30),
-            aggregate_retention_months=storage_cfg.get("aggregate_retention_months", 12),
-            cleanup_interval_hours=storage_cfg.get("cleanup_interval_hours", 24),
-            vacuum_after_cleanup=storage_cfg.get("vacuum_after_cleanup", True),
-            max_storage_mb=storage_cfg.get("max_storage_mb", 400),
-            neon=neon_config,
-        )
+
+        neon_config = NeonStorageConfig()
+        for field in ("log_retention_days", "aggregate_retention_months", "max_storage_mb", "warning_threshold_percent", "cleanup_on_sync"):
+            if field in neon_cfg:
+                setattr(neon_config, f"neon_{field}", neon_cfg[field])
+
+        storage_config = StorageConfig()
+        for field in ("log_retention_days", "aggregate_retention_months", "cleanup_interval_hours", "vacuum_after_cleanup", "max_storage_mb"):
+            if field in storage_cfg:
+                setattr(storage_config, field, storage_cfg[field])
+        storage_config.neon = neon_config
+        return storage_config
     
     def _deep_merge(self, base: dict, overlay: dict) -> None:
         """Deep merge overlay into base dict."""

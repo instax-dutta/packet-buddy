@@ -72,17 +72,13 @@
                         <span class="btn-icon">🔄</span>
                         <span>Refresh Data</span>
                     </button>
+                    <button id="wrapup-btn" class="control-btn primary">
+                        <span class="btn-icon">🎉</span>
+                        <span>Year Wrap Up</span>
+                    </button>
                     <button id="export-btn" class="control-btn">
                         <span class="btn-icon">📥</span>
                         <span>Export CSV</span>
-                    </button>
-                    <button id="html-export-btn" class="control-btn">
-                        <span class="btn-icon">🎉</span>
-                        <span>Year Wrap-Up</span>
-                    </button>
-                    <button id="llm-export-btn" class="control-btn">
-                        <span class="btn-icon">🤖</span>
-                        <span>LLM Export</span>
                     </button>
                 </div>
             </div>
@@ -286,6 +282,33 @@
             </div>
         </section>
 
+        <!-- Wrap-Up Format Picker Popup -->
+        <div class="popup-overlay" id="wrapup-popup">
+            <div class="popup">
+                <div class="popup-header">
+                    <span class="popup-title">🎉 Year Wrap Up</span>
+                    <button class="popup-close" id="popup-close">&times;</button>
+                </div>
+                <p class="popup-desc">Choose your wrap-up format:</p>
+                <div class="popup-options">
+                    <button class="popup-option" data-format="html">
+                        <span class="popup-option-icon">📄</span>
+                        <div class="popup-option-content">
+                            <span class="popup-option-title">Shareable Report</span>
+                            <span class="popup-option-desc">Beautiful HTML — perfect for screenshots & social sharing</span>
+                        </div>
+                    </button>
+                    <button class="popup-option" data-format="toon">
+                        <span class="popup-option-icon">🤖</span>
+                        <div class="popup-option-content">
+                            <span class="popup-option-title">AI Analysis (TOON)</span>
+                            <span class="popup-option-desc">Token-optimized format for ChatGPT, Claude & AI agents</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Footer -->
         <footer class="footer">
             <div class="footer-content">
@@ -294,11 +317,11 @@
                     <span class="release-date" id="release-date"></span>
                 </p>
                 <div class="footer-links">
-                    <a href="/api/export?format=json" download class="footer-link">
-                        <span>📄</span> Export JSON
-                    </a>
                     <a href="/api/export?format=csv" download class="footer-link">
-                        <span>📊</span> Export CSV
+                        <span>📊</span> CSV
+                    </a>
+                    <a href="/api/export?format=json" download class="footer-link">
+                        <span>📄</span> JSON
                     </a>
                 </div>
             </div>

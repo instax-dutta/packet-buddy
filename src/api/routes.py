@@ -216,6 +216,60 @@ async def range_query(
     }
 
 
+def _gather_export_data():
+    """Shared data gathering for export endpoints.
+    
+    Collects all data from storage once, computes derived insights,
+    and returns a complete data dict to avoid redundant DB queries.
+    """
+    from ..utils.formatters import format_bytes
+    
+    device_id, os_type, hostname = get_device_info()
+    stats = storage.get_all_export_stats()
+    
+    daily_data = stats["daily_data"]
+    monthly_summaries = stats["monthly_summaries"]
+    total_sent = stats["total_sent"]
+    total_received = stats["total_received"]
+    overall_peak = stats["overall_peak"]
+    tracking_stats = stats["tracking_stats"]
+    
+    total_bytes = total_sent + total_received
+    days_tracked = tracking_stats.get("total_days_tracked", 0) if tracking_stats else 0
+    avg_daily = total_bytes / max(days_tracked, 1)
+    
+    peak_day = max(daily_data, key=lambda x: x["bytes_sent"] + x["bytes_received"]) if daily_data else None
+    
+    today = date.today()
+    current_year = today.year
+    year_data = [d for d in daily_data if d["date"].startswith(str(current_year))]
+    year_sent = sum(d["bytes_sent"] for d in year_data)
+    year_received = sum(d["bytes_received"] for d in year_data)
+    year_total = year_sent + year_received
+    
+    return {
+        "device_id": device_id,
+        "os_type": os_type,
+        "hostname": hostname,
+        "daily_data": daily_data,
+        "monthly_summaries": monthly_summaries,
+        "total_sent": total_sent,
+        "total_received": total_received,
+        "total_bytes": total_bytes,
+        "overall_peak": overall_peak,
+        "tracking_stats": tracking_stats,
+        "days_tracked": days_tracked,
+        "avg_daily": avg_daily,
+        "peak_day": peak_day,
+        "current_year": current_year,
+        "year_data": year_data,
+        "year_sent": year_sent,
+        "year_received": year_received,
+        "year_total": year_total,
+        "format_bytes": format_bytes,
+    }
+
+
 @router.get("/export")
 async def export(format: str = Query("json", description="csv, json, html, or llm")):
     """Export all usage data in various formats."""
@@ -224,11 +278,23 @@ async def export(format: str = Query("json", description="csv, json, html, or ll
         return await export_csv()
     elif format == "html":
         return await export_html()
-    elif format == "llm":
+    elif format == "llm" or format == "toon":
         return await export_llm_friendly()
     else:
         # Enhanced JSON format
         return await export_json()
+
+
+@router.get("/export/wrapup")
+async def export_wrapup(format: str = Query("html", description="html or toon")):
+    """Unified year wrap-up export.
+    
+    Generates a shareable HTML report or AI-friendly TOON format.
+    Replaces the separate /export?format=html and /export/llm endpoints.
+    """
+    if format == "toon":
+        return await export_llm_friendly()
+    return await export_html()
 
 
 async def export_csv():
@@ -265,12 +331,14 @@ async def export_json():
     
     device_id, os_type, hostname = get_device_info()
     
-    # Get comprehensive data
-    daily_data = storage.get_all_daily_aggregates()
-    monthly_summaries = storage.get_monthly_summaries()
-    total_sent, total_received = storage.get_lifetime_usage()
-    overall_peak = storage.get_overall_peak_speed()
-    tracking_stats = storage.get_tracking_stats()
+    # Get comprehensive data in a single connection
+    stats = storage.get_all_export_stats()
+    daily_data = stats["daily_data"]
+    monthly_summaries = stats["monthly_summaries"]
+    total_sent = stats["total_sent"]
+    total_received = stats["total_received"]
+    overall_peak = stats["overall_peak"]
+    tracking_stats = stats["tracking_stats"]
     
     # Calculate insights
     total_bytes = total_sent + total_received
@@ -358,237 +426,210 @@ async def export_json():
 
 
 async def export_html():
-    """Export beautiful HTML year wrap-up report."""
-    from ..utils.formatters import format_bytes
+    """Export beautiful, socially shareable HTML year wrap-up report."""
+    d = _gather_export_data()
+    fmt = d["format_bytes"]
     
-    device_id, os_type, hostname = get_device_info()
-    
-    # Get comprehensive data
-    daily_data = storage.get_all_daily_aggregates()
-    monthly_summaries = storage.get_monthly_summaries()
-    total_sent, total_received = storage.get_lifetime_usage()
-    overall_peak = storage.get_overall_peak_speed()
-    tracking_stats = storage.get_tracking_stats()
-    
-    # Calculate insights
-    total_bytes = total_sent + total_received
-    days_tracked = tracking_stats.get("total_days_tracked", 0) if tracking_stats else 0
-    avg_daily = total_bytes / max(days_tracked, 1)
-    
-    # Find peak day
-    peak_day = max(daily_data, key=lambda x: x["bytes_sent"] + x["bytes_received"]) if daily_data else None
-    
-    # Get current year data
-    today = date.today()
-    current_year = today.year
-    year_data = [d for d in daily_data if d["date"].startswith(str(current_year))]
-    year_sent = sum(d["bytes_sent"] for d in year_data)
-    year_received = sum(d["bytes_received"] for d in year_data)
-    year_total = year_sent + year_received
-    
-    # Generate beautiful HTML
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PacketBuddy {current_year} Year Wrap-Up - {hostname}</title>
+    <meta property="og:title" content="PacketBuddy {d['current_year']} Wrap-Up — {d['hostname']}">
+    <meta property="og:description" content="I used {fmt(d['year_total'])} of internet data this year! See my full breakdown.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>PacketBuddy {d['current_year']} Year Wrap-Up — {d['hostname']}</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            padding: 20px;
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a1a;
+            color: #e8e8f0;
+            padding: 0;
+            line-height: 1.5;
         }}
-        .container {{
-            max-width: 1200px;
+        .wrap {{
+            max-width: 1100px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+            padding: 20px;
+        }}
+        .card {{
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(8px);
+        }}
+        .hero {{
+            text-align: center;
+            padding: 48px 32px 36px;
+            background: linear-gradient(135deg, #1a1a3e, #0f3460, #1a1a3e);
+            border-bottom: 3px solid #e94560;
+        }}
+        .hero h1 {{
+            font-size: 3.2em;
+            font-weight: 900;
+            letter-spacing: -1px;
+            background: linear-gradient(90deg, #e94560, #0f3460, #533483);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }}
+        .hero h1 span {{
+            -webkit-text-fill-color: #e8e8f0;
+        }}
+        .hero .sub {{
+            font-size: 1.15em;
+            opacity: 0.7;
+            margin-top: 8px;
+            font-weight: 500;
+        }}
+        .hero-total {{
+            margin-top: 28px;
+            padding: 24px;
+            background: rgba(233,69,96,0.12);
+            border: 1px solid rgba(233,69,96,0.25);
             border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            display: inline-block;
+            min-width: 320px;
         }}
-        h1 {{
-            font-size: 3em;
-            margin-bottom: 10px;
-            text-align: center;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }}
-        .subtitle {{
-            text-align: center;
-            font-size: 1.2em;
-            opacity: 0.9;
-            margin-bottom: 40px;
-        }}
-        .stats-grid {{
+        .hero-total .label {{ font-size: 0.85em; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }}
+        .hero-total .value {{ font-size: 3em; font-weight: 900; margin: 4px 0; }}
+        .hero-total .detail {{ font-size: 1em; opacity: 0.7; }}
+        .hero-total .detail .up {{ color: #e94560; }}
+        .hero-total .detail .down {{ color: #53d8fb; }}
+        .stat-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 24px;
         }}
-        .stat-card {{
-            background: rgba(255, 255, 255, 0.15);
-            padding: 25px;
-            border-radius: 15px;
+        .stat-item {{
             text-align: center;
-            transition: transform 0.3s ease;
+            padding: 20px 12px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 16px;
         }}
-        .stat-card:hover {{
-            transform: translateY(-5px);
-        }}
-        .stat-value {{
-            font-size: 2.5em;
-            font-weight: bold;
-            margin: 10px 0;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-        }}
-        .stat-label {{
-            font-size: 1.1em;
-            opacity: 0.9;
-        }}
-        .section {{
-            margin: 40px 0;
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 15px;
-        }}
-        .section h2 {{
-            font-size: 2em;
+        .stat-item .num {{ font-size: 1.8em; font-weight: 900; }}
+        .stat-item .lbl {{ font-size: 0.8em; opacity: 0.55; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; font-weight: 600; }}
+        .stat-item .ico {{ font-size: 1.4em; margin-bottom: 6px; }}
+        .section-title {{
+            font-size: 1.5em;
+            font-weight: 800;
             margin-bottom: 20px;
-            border-bottom: 2px solid rgba(255,255,255,0.3);
-            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }}
-        .monthly-grid {{
+        .month-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
         }}
-        .month-card {{
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-        }}
-        .month-name {{
-            font-weight: bold;
-            font-size: 1.1em;
-            margin-bottom: 10px;
-        }}
-        .month-stat {{
-            font-size: 0.9em;
-            margin: 5px 0;
-            opacity: 0.95;
-        }}
-        .highlight {{
-            background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
-            padding: 30px;
-            border-radius: 15px;
-            margin: 30px 0;
+        .month-item {{
+            background: rgba(255,255,255,0.04);
+            border-radius: 14px;
+            padding: 14px;
             text-align: center;
         }}
+        .month-item .name {{ font-weight: 700; font-size: 0.9em; margin-bottom: 6px; opacity: 0.85; }}
+        .month-item .vol {{ font-weight: 800; font-size: 1.1em; color: #53d8fb; }}
+        .month-item .meta {{ font-size: 0.75em; opacity: 0.5; margin-top: 4px; }}
+        .highlight {{
+            background: linear-gradient(90deg, #e94560, #533483);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }}
+        .highlight .hl-label {{ font-weight: 700; font-size: 0.9em; opacity: 0.85; }}
+        .highlight .hl-value {{ font-weight: 900; font-size: 1.3em; }}
         .footer {{
             text-align: center;
-            margin-top: 40px;
-            opacity: 0.8;
-            font-size: 0.9em;
+            padding: 24px;
+            opacity: 0.4;
+            font-size: 0.85em;
         }}
-        .emoji {{
-            font-size: 1.5em;
-            margin-right: 10px;
-        }}
-        @media print {{
-            body {{ background: white; color: black; }}
-            .container {{ box-shadow: none; }}
+        @media (max-width: 700px) {{
+            .stat-grid {{ grid-template-columns: repeat(2, 1fr); }}
+            .hero h1 {{ font-size: 2em; }}
+            .hero-total .value {{ font-size: 2em; }}
+            .month-grid {{ grid-template-columns: repeat(2, 1fr); }}
         }}
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🌐 {current_year} Internet Wrap-Up</h1>
-        <div class="subtitle">Your year in data - {hostname}</div>
-        
-        <div class="highlight">
-            <h2 style="margin-bottom: 15px;">🎉 This Year's Total</h2>
-            <div class="stat-value">{format_bytes(year_total)}</div>
-            <p style="font-size: 1.1em; margin-top: 10px;">
-                ↑ {format_bytes(year_sent)} uploaded • ↓ {format_bytes(year_received)} downloaded
-            </p>
-        </div>
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label"><span class="emoji">📊</span>Total All-Time</div>
-                <div class="stat-value">{format_bytes(total_bytes)}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label"><span class="emoji">📅</span>Days Tracked</div>
-                <div class="stat-value">{days_tracked}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label"><span class="emoji">⚡</span>Peak Speed</div>
-                <div class="stat-value">{format_bytes(overall_peak)}/s</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label"><span class="emoji">📈</span>Daily Average</div>
-                <div class="stat-value">{format_bytes(int(avg_daily))}</div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2>📆 Monthly Breakdown</h2>
-            <div class="monthly-grid">
-"""
-    
-    # Add monthly cards
-    for month_data in monthly_summaries:
-        month_name = datetime.strptime(month_data["month"] + "-01", "%Y-%m-%d").strftime("%B %Y")
-        month_total = month_data["bytes_sent"] + month_data["bytes_received"]
-        html_content += f"""
-                <div class="month-card">
-                    <div class="month-name">{month_name}</div>
-                    <div class="month-stat">📦 {format_bytes(month_total)}</div>
-                    <div class="month-stat">↑ {format_bytes(month_data["bytes_sent"])}</div>
-                    <div class="month-stat">↓ {format_bytes(month_data["bytes_received"])}</div>
-                    <div class="month-stat">⚡ {format_bytes(month_data["peak_speed"])}/s</div>
+    <div class="wrap">
+        <div class="card hero">
+            <h1>🌐 <span>{d['current_year']} Internet Wrap-Up</span></h1>
+            <div class="sub">{d['hostname']} — {d['os_type']}</div>
+            <div class="hero-total">
+                <div class="label">Total Data This Year</div>
+                <div class="value">{fmt(d['year_total'])}</div>
+                <div class="detail">
+                    <span class="up">↑ {fmt(d['year_sent'])}</span> &nbsp;•&nbsp; <span class="down">↓ {fmt(d['year_received'])}</span>
                 </div>
-"""
+            </div>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-item"><div class="ico">📊</div><div class="num">{fmt(d['total_bytes'])}</div><div class="lbl">All-Time Total</div></div>
+            <div class="stat-item"><div class="ico">📅</div><div class="num">{d['days_tracked']}</div><div class="lbl">Days Tracked</div></div>
+            <div class="stat-item"><div class="ico">⚡</div><div class="num">{fmt(d['overall_peak'])}/s</div><div class="lbl">Peak Speed</div></div>
+            <div class="stat-item"><div class="ico">📈</div><div class="num">{fmt(int(d['avg_daily']))}</div><div class="lbl">Daily Avg</div></div>
+        </div>"""[1:]
+    
+    html_content += """
+        <div class="card">
+            <div class="section-title">📆 Monthly Breakdown</div>
+            <div class="month-grid">
+"""    
+    for m in d["monthly_summaries"]:
+        month_name = datetime.strptime(m["month"] + "-01", "%Y-%m-%d").strftime("%b %Y")
+        m_total = m["bytes_sent"] + m["bytes_received"]
+        html_content += f"""
+                <div class="month-item">
+                    <div class="name">{month_name}</div>
+                    <div class="vol">{fmt(m_total)}</div>
+                    <div class="meta">↑ {fmt(m['bytes_sent'])} / ↓ {fmt(m['bytes_received'])}</div>
+                </div>"""
     
     html_content += """
             </div>
         </div>
-        
-        <div class="section">
-            <h2>🏆 Highlights</h2>
+
+        <div class="card">
+            <div class="section-title">🏆 Highlights</div>
 """
-    
-    if peak_day:
-        peak_day_date = datetime.strptime(peak_day["date"], "%Y-%m-%d").strftime("%B %d, %Y")
-        peak_day_total = peak_day["bytes_sent"] + peak_day["bytes_received"]
+    if d["peak_day"]:
+        pd = d["peak_day"]
+        pd_date = datetime.strptime(pd["date"], "%Y-%m-%d").strftime("%B %d, %Y")
+        pd_total = pd["bytes_sent"] + pd["bytes_received"]
         html_content += f"""
-            <p style="font-size: 1.2em; margin: 15px 0;">
-                <span class="emoji">🌟</span><strong>Most Active Day:</strong> {peak_day_date}
-                <br><span style="margin-left: 50px;">{format_bytes(peak_day_total)} transferred</span>
-            </p>
-"""
+            <div class="highlight">
+                <div><div class="hl-label">🌟 Most Active Day</div><div class="hl-value">{fmt(pd_total)}</div></div>
+                <div style="text-align:right"><div class="hl-label">{pd_date}</div><div class="hl-value" style="font-size:1em;opacity:0.7">↑ {fmt(pd['bytes_sent'])} / ↓ {fmt(pd['bytes_received'])}</div></div>
+            </div>"""
     
-    # Add upload/download ratio
-    ratio = total_sent / max(total_received, 1)
+    ratio = d["total_sent"] / max(d["total_received"], 1)
+    dvd_count = int(d["total_bytes"] / (1024**3) / 4.7)
+    cd_count = int(d["total_bytes"] / (1024**3) / 0.7)
     html_content += f"""
-            <p style="font-size: 1.2em; margin: 15px 0;">
-                <span class="emoji">⚖️</span><strong>Upload/Download Ratio:</strong> {ratio:.2f}:1
-            </p>
-            <p style="font-size: 1.2em; margin: 15px 0;">
-                <span class="emoji">💾</span><strong>Storage Equivalent:</strong> 
-                {int(total_bytes / (1024**3) / 4.7)} DVDs or {int(total_bytes / (1024**3) / 0.7)} CDs
-            </p>
+            <div class="highlight" style="background:linear-gradient(90deg,#1a1a3e,#16213e);border:1px solid rgba(255,255,255,0.06)">
+                <div><div class="hl-label">⚖️ Upload/Download Ratio</div><div class="hl-value">{ratio:.2f}:1</div></div>
+                <div><div class="hl-label">💾 Storage Equivalent</div><div class="hl-value">{dvd_count} DVDs</div></div>
+            </div>
         </div>
-        
+
         <div class="footer">
-            <p>Generated by PacketBuddy v{get_fresh_version()} on {datetime.utcnow().strftime("%B %d, %Y at %H:%M UTC")}</p>
-            <p style="margin-top: 10px;">Device: {hostname} ({os_type})</p>
+            Generated by <strong>PacketBuddy</strong> v{get_fresh_version()} &bull; {datetime.utcnow().strftime("%B %d, %Y at %H:%M UTC")}
+            <br>Device: {d['hostname']} ({d['os_type']})
         </div>
     </div>
 </body>
@@ -599,7 +640,7 @@ async def export_html():
         content=html_content,
         media_type="text/html",
         headers={
-            "Content-Disposition": f"attachment; filename=packetbuddy_wrap_up_{current_year}.html"
+            "Content-Disposition": f"attachment; filename=packetbuddy_wrap_up_{d['current_year']}.html"
         }
     )
 
@@ -607,114 +648,88 @@ async def export_html():
 @router.get("/export/llm")
 async def export_llm_friendly():
     """Export data in TOON format (Token Optimized Object Notation) for LLM analysis."""
-    from ..utils.formatters import format_bytes
-    
-    device_id, os_type, hostname = get_device_info()
-    
-    # Get comprehensive data
-    daily_data = storage.get_all_daily_aggregates()
-    monthly_summaries = storage.get_monthly_summaries()
-    total_sent, total_received = storage.get_lifetime_usage()
-    overall_peak = storage.get_overall_peak_speed()
-    tracking_stats = storage.get_tracking_stats()
-    
-    # Calculate insights
-    total_bytes = total_sent + total_received
-    days_tracked = tracking_stats.get("total_days_tracked", 0) if tracking_stats else 0
-    avg_daily = total_bytes / max(days_tracked, 1)
-    
-    # Get current year data
+    d = _gather_export_data()
+    fmt = d["format_bytes"]
     today = date.today()
-    current_year = today.year
-    year_data = [d for d in daily_data if d["date"].startswith(str(current_year))]
-    year_sent = sum(d["bytes_sent"] for d in year_data)
-    year_received = sum(d["bytes_received"] for d in year_data)
-    year_total = year_sent + year_received
     
-    # Find peak day
-    peak_day = max(daily_data, key=lambda x: x["bytes_sent"] + x["bytes_received"]) if daily_data else None
-    
-    # Generate TOON format report (Token Optimized Object Notation)
-    # ~60% fewer tokens than markdown while maintaining all data
     report = f"""# PacketBuddy Network Usage Export - TOON Format
 
 [meta]
 format = "TOON (Token Optimized Object Notation)"
 generated = "{datetime.utcnow().isoformat()}"
-device = "{hostname}"
-os = "{os_type}"
-device_id = "{device_id}"
+device = "{d['hostname']}"
+os = "{d['os_type']}"
+device_id = "{d['device_id']}"
 version = "{get_fresh_version()}"
 
 [tracking]
-first_date = "{tracking_stats.get("first_tracked_date", "N/A")}"
-last_date = "{tracking_stats.get("last_tracked_date", "N/A")}"
-total_days = {days_tracked}
+first_date = "{d['tracking_stats'].get("first_tracked_date", "N/A")}"
+last_date = "{d['tracking_stats'].get("last_tracked_date", "N/A")}"
+total_days = {d['days_tracked']}
 
 [totals]
-bytes_sent = {total_sent}
-bytes_received = {total_received}
-total_bytes = {total_bytes}
-human = {{sent="{format_bytes(total_sent)}", received="{format_bytes(total_received)}", total="{format_bytes(total_bytes)}"}}
+bytes_sent = {d['total_sent']}
+bytes_received = {d['total_received']}
+total_bytes = {d['total_bytes']}
+human = {{sent="{fmt(d['total_sent'])}", received="{fmt(d['total_received'])}", total="{fmt(d['total_bytes'])}"}}
 
-[year_{current_year}]
-bytes_sent = {year_sent}
-bytes_received = {year_received}
-total_bytes = {year_total}
-days = {len(year_data)}
-human = {{sent="{format_bytes(year_sent)}", received="{format_bytes(year_received)}", total="{format_bytes(year_total)}"}}
+[year_{d['current_year']}]
+bytes_sent = {d['year_sent']}
+bytes_received = {d['year_received']}
+total_bytes = {d['year_total']}
+days = {len(d['year_data'])}
+human = {{sent="{fmt(d['year_sent'])}", received="{fmt(d['year_received'])}", total="{fmt(d['year_total'])}"}}
 
 [records]
-peak_speed_bps = {overall_peak}
-peak_speed_human = "{format_bytes(overall_peak)}/s"
+peak_speed_bps = {d['overall_peak']}
+peak_speed_human = "{fmt(d['overall_peak'])}/s"
 """
     
-    if peak_day:
-        peak_day_total = peak_day["bytes_sent"] + peak_day["bytes_received"]
-        report += f"""peak_day_date = "{peak_day["date"]}"
-peak_day_bytes = {peak_day_total}
-peak_day_human = "{format_bytes(peak_day_total)}"
-peak_day_sent = {peak_day["bytes_sent"]}
-peak_day_received = {peak_day["bytes_received"]}
-peak_day_speed = {peak_day["peak_speed"]}
+    if d["peak_day"]:
+        pd = d["peak_day"]
+        pd_total = pd["bytes_sent"] + pd["bytes_received"]
+        report += f"""peak_day_date = "{pd['date']}"
+peak_day_bytes = {pd_total}
+peak_day_human = "{fmt(pd_total)}"
+peak_day_sent = {pd['bytes_sent']}
+peak_day_received = {pd['bytes_received']}
+peak_day_speed = {pd['peak_speed']}
 """
     
+    ratio = d["total_sent"] / max(d["total_received"], 1)
     report += f"""
 [averages]
-daily_bytes = {int(avg_daily)}
-daily_human = "{format_bytes(int(avg_daily))}"
+daily_bytes = {int(d['avg_daily'])}
+daily_human = "{fmt(int(d['avg_daily']))}"
 
 [ratios]
-upload_download = {(total_sent / max(total_received, 1)):.2f}
-upload_percent = {(total_sent / max(total_bytes, 1) * 100):.1f}
-download_percent = {(total_received / max(total_bytes, 1) * 100):.1f}
+upload_download = {ratio:.2f}
+upload_percent = {(d['total_sent'] / max(d['total_bytes'], 1) * 100):.1f}
+download_percent = {(d['total_received'] / max(d['total_bytes'], 1) * 100):.1f}
 
 [comparisons]
-dvd_equivalent = {int(total_bytes / (1024**3) / 4.7)}
-cd_equivalent = {int(total_bytes / (1024**3) / 0.7)}
-hd_movie_equivalent = {int(total_bytes / (1024**3) / 5)}
+dvd_equivalent = {int(d['total_bytes'] / (1024**3) / 4.7)}
+cd_equivalent = {int(d['total_bytes'] / (1024**3) / 0.7)}
+hd_movie_equivalent = {int(d['total_bytes'] / (1024**3) / 5)}
 
 """
     
-    # Add monthly data in compact format
     report += "[monthly_data]\n"
-    for i, month_data in enumerate(monthly_summaries):
-        month_total = month_data["bytes_sent"] + month_data["bytes_received"]
-        report += f"""month_{i} = {{name="{month_data["month"]}", sent={month_data["bytes_sent"]}, received={month_data["bytes_received"]}, total={month_total}, peak={month_data["peak_speed"]}, days={month_data["days_tracked"]}, human="{format_bytes(month_total)}"}}
+    for i, m in enumerate(d["monthly_summaries"]):
+        m_total = m["bytes_sent"] + m["bytes_received"]
+        report += f"""month_{i} = {{name="{m['month']}", sent={m['bytes_sent']}, received={m['bytes_received']}, total={m_total}, peak={m['peak_speed']}, days={m['days_tracked']}, human="{fmt(m_total)}"}}
 """
     
-    # Add recent 30 days in compact format
     report += "\n[recent_30_days]\n"
-    recent_data = [d for d in daily_data if datetime.strptime(d["date"], "%Y-%m-%d").date() >= today - timedelta(days=30)]
+    recent_data = [dd for dd in d["daily_data"] if datetime.strptime(dd["date"], "%Y-%m-%d").date() >= today - timedelta(days=30)]
     for i, day in enumerate(sorted(recent_data, key=lambda x: x["date"], reverse=True)[:30]):
         day_total = day["bytes_sent"] + day["bytes_received"]
-        report += f"""day_{i} = {{date="{day["date"]}", sent={day["bytes_sent"]}, received={day["bytes_received"]}, total={day_total}, peak={day["peak_speed"]}}}
+        report += f"""day_{i} = {{date="{day['date']}", sent={day['bytes_sent']}, received={day['bytes_received']}, total={day_total}, peak={day['peak_speed']}}}
 """
     
-    # Add LLM analysis prompts
     report += f"""
 [llm_prompts]
-year_wrapup = "Create a fun, Spotify-style {current_year} wrap-up based on this network usage data. Include interesting insights, fun facts, and comparisons."
+year_wrapup = "Create a fun, Spotify-style {d['current_year']} wrap-up based on this network usage data. Include interesting insights, fun facts, and comparisons."
 professional = "Generate a professional network usage summary highlighting efficiency, patterns, and recommendations for optimization."
 personal = "Analyze my internet usage patterns and give me insights about my digital life. What does this data say about my online behavior?"
 trends = "Identify trends in my internet usage over time. Are there seasonal patterns? Which months had unusual activity?"
@@ -765,8 +780,7 @@ async def storage_info():
         "retention": {
             "local_log_days": config.storage.log_retention_days,
             "local_aggregate_months": config.storage.aggregate_retention_months,
-            "neon_log_days": config.storage.neon.neon_log_retention_days if hasattr(config.storage, 'neon') else 7,
-            "neon_aggregate_months": config.storage.neon.neon_aggregate_retention_months if hasattr(config.storage, 'neon') else 3,
+            "neon_aggregate_months": config.storage.neon.neon_aggregate_retention_months if hasattr(config.storage, 'neon') else 6,
         }
     }
     
@@ -788,10 +802,8 @@ async def storage_info():
                 "warning_threshold_percent": warning_threshold,
                 "tables": neon_storage.get("tables", {}),
                 "device_count": neon_stats.get("device_count", 0),
-                "log_count": neon_stats.get("log_count", 0),
-                "oldest_log": neon_stats.get("oldest_log"),
-                "newest_log": neon_stats.get("newest_log"),
-                "logs_per_device": neon_stats.get("logs_per_device", []),
+                "daily_count": neon_stats.get("daily_count", 0),
+                "monthly_count": neon_stats.get("monthly_count", 0),
             }
             
             if neon_usage_percent >= warning_threshold:
@@ -834,16 +846,13 @@ async def trigger_cleanup(
     if sync.enabled:
         try:
             neon_config = getattr(config.storage, 'neon', None)
-            neon_log_days = neon_config.neon_log_retention_days if neon_config else 7
-            neon_agg_months = neon_config.neon_aggregate_retention_months if neon_config else 3
+            neon_agg_months = neon_config.neon_aggregate_retention_months if neon_config else 6
             
             if aggressive:
                 neon_results = await sync.aggressive_cleanup()
             else:
-                neon_deleted = await sync.cleanup_old_logs(neon_log_days)
                 neon_aggregates = await sync.cleanup_old_aggregates(neon_agg_months)
                 neon_results = {
-                    "logs_deleted": neon_deleted,
                     "aggregates_deleted": neon_aggregates,
                     "vacuum_run": False
                 }

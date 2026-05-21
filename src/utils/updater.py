@@ -91,6 +91,24 @@ def check_for_updates() -> Tuple[bool, Optional[str], Optional[str]]:
     return has_update, current, latest
 
 
+def has_local_changes() -> bool:
+    """Check if there are uncommitted local changes."""
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=5
+        )
+        return bool(result.stdout.strip())
+    except Exception as e:
+        logger.error(f"Failed to check for local changes: {e}")
+        return False
+
+
 def perform_update() -> bool:
     """
     Perform the update by pulling latest changes.
@@ -101,16 +119,25 @@ def perform_update() -> bool:
     try:
         logger.info("Starting auto-update...")
         
-        # Stash any local changes (if any)
-        subprocess.run(
-            ["git", "stash"],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-            encoding='utf-8',
-            errors='replace',
-            timeout=10
-        )
+        stashed = False
+        has_changes = has_local_changes()
+        
+        if has_changes:
+            logger.info("Local changes detected, stashing before update...")
+            stash_result = subprocess.run(
+                ["git", "stash", "push", "-m", "Auto-stash before update: local changes preserved"],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                timeout=10
+            )
+            if stash_result.returncode == 0:
+                stashed = True
+                logger.info("Local changes stashed successfully")
+            else:
+                logger.warning(f"Failed to stash: {stash_result.stderr}")
         
         # Pull latest changes
         result = subprocess.run(
@@ -125,6 +152,8 @@ def perform_update() -> bool:
         
         if result.returncode != 0:
             logger.error(f"Git pull failed: {result.stderr}")
+            if stashed:
+                logger.warning("Pull failed - stashed changes remain in stash, user should run 'git stash pop'")
             return False
         
         # Update dependencies if requirements.txt changed
@@ -145,6 +174,36 @@ def perform_update() -> bool:
                     errors='replace',
                     timeout=120
                 )
+        
+        # Now restore stashed changes if any
+        if stashed:
+            logger.info("Restoring stashed local changes...")
+            restore_result = subprocess.run(
+                ["git", "stash", "pop"],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                timeout=10
+            )
+            if restore_result.returncode == 0:
+                logger.info("Stashed changes restored successfully")
+            else:
+                logger.warning(f"Stash restore has conflicts: {restore_result.stderr}")
+                logger.warning("Preserving stash - please run 'git stash drop' after resolving conflicts manually")
+                try:
+                    subprocess.run(
+                        ["git", "stash", "list"],
+                        cwd=PROJECT_ROOT,
+                        capture_output=True,
+                        text=True,
+                        encoding='utf-8',
+                        errors='replace',
+                        timeout=5
+                    )
+                except Exception:
+                    pass
         
         # Update system PATH and service registration
         logger.info("Updating system PATH and service registration...")
@@ -371,17 +430,12 @@ def auto_update_check(force_restart: bool = True, auto_apply: bool = True) -> bo
     logger.info("Automatically applying update...")
     
     if perform_update():
-        logger.info("✅ Update applied successfully!")
-        print(f"\n{'='*60}")
-        print(f"📦 PacketBuddy Updated Successfully!")
-        print(f"{'='*60}")
-        print(f"Previous version: {current[:7] if current else 'unknown'}")
-        print(f"New version: {latest[:7] if latest else 'unknown'}")
-        print(f"{'='*60}\n")
+        logger.info("Update applied successfully!")
+        logger.info("Previous version: %s", current[:7] if current else 'unknown')
+        logger.info("New version: %s", latest[:7] if latest else 'unknown')
         
         if force_restart:
             logger.info("Restarting service to apply changes...")
-            print("🔄 Restarting service to apply changes...")
             restart_service()
             
         return True

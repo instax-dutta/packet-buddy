@@ -1,8 +1,13 @@
 from setuptools import setup, find_packages
+from pathlib import Path
+
+# Read version from VERSION file (SSOT)
+_version_file = Path(__file__).parent / "VERSION"
+VERSION = _version_file.read_text().strip() if _version_file.exists() else "1.4.5"
 
 setup(
     name="packetbuddy",
-    version="1.4.1",
+    version=VERSION,
     description="Ultra-lightweight cross-platform network usage tracker",
     author="PacketBuddy Team",
     python_requires=">=3.11",

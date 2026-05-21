@@ -1,9 +1,12 @@
 import asyncio
+import logging
 import psutil
 import subprocess
 import platform
 from datetime import datetime
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from ..utils.config import config
 from .storage import storage
@@ -64,7 +67,7 @@ class NetworkMonitor:
                         if "dev" in parts:
                             return parts[parts.index("dev") + 1]
         except Exception as e:
-            print(f"Error detecting primary interface: {e}")
+            logger.error("Error detecting primary interface: %s", e)
         return None
 
     def _get_network_counters(self) -> tuple:
@@ -120,11 +123,12 @@ class NetworkMonitor:
         self.running = True
         
         # Initialize counters
-        primary = self._get_primary_interface()
+        loop = asyncio.get_running_loop()
+        primary = await loop.run_in_executor(None, self._get_primary_interface)
         if primary:
-            print(f"Monitoring primary interface: {primary}")
+            logger.info("Monitoring primary interface: %s", primary)
         else:
-            print("No primary interface detected, falling back to all non-loopback interfaces")
+            logger.warning("No primary interface detected, falling back to all non-loopback interfaces")
             
         self.last_sent, self.last_received = self._get_network_counters()
         
@@ -158,7 +162,7 @@ class NetworkMonitor:
                 gap_received = self.last_received
             
             if gap_sent > 1024 or gap_received > 1024:  # Only catch up if > 1KB
-                print(f"📊 Catching up on missed usage: {gap_sent}B sent, {gap_received}B received")
+                logger.info("Catching up on missed usage: %dB sent, %dB received", gap_sent, gap_received)
                 storage.insert_usage(
                     bytes_sent=max(0, gap_sent),
                     bytes_received=max(0, gap_received),
@@ -172,7 +176,7 @@ class NetworkMonitor:
             storage.set_state("last_abs_received", value_int=self.last_received)
             
         except Exception as e:
-            print(f"Catch-up logic failed: {e}")
+            logger.error("Catch-up logic failed: %s", e)
         
         # Start monitoring and batch writing tasks
         try:
@@ -182,7 +186,7 @@ class NetworkMonitor:
                 self._battery_check_loop(),
             )
         except Exception as e:
-            print(f"Monitor service crash: {e}")
+            logger.error("Monitor service crash: %s", e)
             self.running = False
 
     async def _battery_check_loop(self):
@@ -191,7 +195,7 @@ class NetworkMonitor:
             try:
                 self._check_battery_status()
             except Exception as e:
-                print(f"Battery check error: {e}")
+                logger.error("Battery check error: %s", e)
             await asyncio.sleep(30)  # Check battery every 30s
     
     async def _monitor_loop(self):
@@ -239,14 +243,14 @@ class NetworkMonitor:
                 self.last_received = current_received
                 
                 # Periodically update absolute counters in DB for next startup catch-up
-                # We do this every 5 minutes or so to avoid too much DB noise, 
-                # or just reuse the batch write interval
-                if len(self.pending_writes) % 10 == 0: # Every ~10 samples
+                # We do this every 10 samples to avoid too much DB noise,
+                # but only if there's actually data to persist
+                if self.pending_writes and len(self.pending_writes) % 10 == 0:
                     storage.set_state("last_abs_sent", value_int=current_sent)
                     storage.set_state("last_abs_received", value_int=current_received)
                 
             except Exception as e:
-                print(f"Monitor loop error: {e}")
+                logger.error("Monitor loop error: %s", e)
             
             await asyncio.sleep(self.poll_interval)
     
@@ -272,7 +276,7 @@ class NetworkMonitor:
                 self.pending_writes.clear()
                 
             except Exception as e:
-                print(f"Batch write error: {e}")
+                logger.error("Batch write error: %s", e)
     
     async def stop(self):
         """Stop monitoring gracefully."""
@@ -289,7 +293,7 @@ class NetworkMonitor:
                         timestamp=entry["timestamp"]
                     )
                 except Exception as e:
-                    print(f"Final flush error: {e}")
+                    logger.error("Final flush error: %s", e)
         
         self.pending_writes.clear()
     

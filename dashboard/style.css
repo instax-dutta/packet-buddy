@@ -716,3 +716,123 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Wrap-Up Format Picker Popup */
+.popup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: hsla(0, 0%, 0%, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.popup-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.popup {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border) / 0.5);
+    border-radius: 24px;
+    padding: 32px;
+    max-width: 480px;
+    width: 90%;
+    box-shadow: 0 32px 64px hsla(0, 0%, 0%, 0.5);
+    transform: translateY(20px) scale(0.96);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.popup-overlay.open .popup {
+    transform: translateY(0) scale(1);
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.popup-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: hsl(var(--foreground));
+}
+
+.popup-close {
+    background: none;
+    border: none;
+    color: hsl(var(--muted-foreground));
+    font-size: 1.8rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.popup-close:hover {
+    color: hsl(var(--foreground));
+}
+
+.popup-desc {
+    color: hsl(var(--muted-foreground));
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+    font-weight: 600;
+}
+
+.popup-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.popup-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: hsl(var(--secondary) / 0.3);
+    border: 1px solid hsl(var(--border) / 0.3);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+    color: hsl(var(--foreground));
+    width: 100%;
+}
+
+.popup-option:hover {
+    background: hsl(var(--secondary) / 0.6);
+    border-color: hsl(var(--primary) / 0.4);
+    transform: translateX(4px);
+}
+
+.popup-option-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+}
+
+.popup-option-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.popup-option-title {
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.popup-option-desc {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    font-weight: 600;
+}

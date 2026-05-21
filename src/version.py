@@ -4,7 +4,10 @@ This module reads the version from the VERSION file at runtime,
 ensuring the version is always up-to-date even if the module is cached.
 """
 
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def get_version() -> str:
@@ -24,8 +27,7 @@ def get_version() -> str:
         # Read and return the version, stripping whitespace
         return version_file.read_text().strip()
     except Exception as e:
-        # Fallback to a default version if file can't be read
-        print(f"Warning: Could not read VERSION file: {e}")
+        logger.warning("Could not read VERSION file: %s", e)
         return "1.0.0"
 
 

@@ -1,9 +1,13 @@
 """NeonDB sync module for cloud data replication."""
 
 import asyncio
+import logging
+import time
 import asyncpg
 from datetime import datetime, date
 from typing import Optional, Tuple, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 from ..utils.config import config
 from .storage import storage
@@ -15,15 +19,30 @@ class NeonSync:
     def __init__(self):
         self.running = False
         self.pool: Optional[asyncpg.Pool] = None
-        self.sync_interval = config.get("sync", "interval", default=30)
+        self.sync_interval = config.get("sync", "interval", default=300)
         self.retry_delay = config.get("sync", "retry_delay", default=5)
         self.max_retries = config.get("sync", "max_retries", default=3)
         self.enabled = config.sync_enabled
+        # Local TTL cache for remote queries — avoids burning CU-hours on hot API paths
+        self._cache: Dict[str, Tuple[Any, float]] = {}
+        self._cache_ttl = config.get("sync", "cache_ttl", default=300)
+
+    def _cache_get(self, key: str):
+        """Get cached value if not expired."""
+        if key in self._cache:
+            value, expiry = self._cache[key]
+            if time.monotonic() < expiry:
+                return value
+        return None
+
+    def _cache_set(self, key: str, value: Any, ttl: Optional[int] = None):
+        """Set cached value with TTL in seconds (defaults to self._cache_ttl)."""
+        self._cache[key] = (value, time.monotonic() + (ttl or self._cache_ttl))
     
     async def start(self):
         """Start sync service."""
         if not self.enabled:
-            print("Sync disabled (no NEON_DB_URL configured)")
+            logger.info("Sync disabled (no NEON_DB_URL configured)")
             return
         
         self.running = True
@@ -43,7 +62,7 @@ class NeonSync:
             await self._sync_loop()
             
         except Exception as e:
-            print(f"Sync service error: {e}")
+            logger.error("Sync service error: %s", e)
             self.enabled = False
     
     async def _init_remote_schema(self):
@@ -120,75 +139,45 @@ class NeonSync:
             try:
                 await self._sync_data()
             except Exception as e:
-                print(f"Sync error: {e}")
+                logger.error("Sync error: %s", e)
     
     async def _sync_data(self):
-        """Sync unsynced logs to NeonDB with retry."""
-        logs = storage.get_unsynced_logs(limit=1000)
+        """Sync aggregates to NeonDB with retry.
         
-        if not logs:
+        Free-tier optimization: Only syncs aggregates (daily + monthly),
+        NOT raw usage_logs. Raw per-second logs consume ~90%+ of storage
+        but provide zero value for multi-device cross-device views.
+        Aggregates are ~0.01% the size and contain all information needed.
+        """
+        daily = storage.get_all_daily_aggregates()
+        monthly = storage.get_all_monthly_aggregates()
+        
+        if not daily and not monthly:
             return
         
         for attempt in range(self.max_retries):
             try:
                 async with self.pool.acquire() as conn:
                     async with conn.transaction():
-                        # Batch insert usage logs
-                        # Batch insert usage logs
-                        sync_data = []
-                        daily_aggs = {}
-                        monthly_aggs = {}
-
-                        for log in logs:
-                            ts = datetime.fromisoformat(log["timestamp"])
-                            sync_data.append((log["device_id"], ts, log["bytes_sent"], log["bytes_received"]))
-                            
-                            # Aggregate for daily stats
-                            log_date = ts.date()
-                            d_key = (log["device_id"], log_date)
-                            if d_key not in daily_aggs:
-                                daily_aggs[d_key] = {"sent": 0, "received": 0}
-                            daily_aggs[d_key]["sent"] += log["bytes_sent"]
-                            daily_aggs[d_key]["received"] += log["bytes_received"]
-
-                            # Aggregate for monthly stats
-                            month_str = log_date.strftime("%Y-%m")
-                            m_key = (log["device_id"], month_str)
-                            if m_key not in monthly_aggs:
-                                monthly_aggs[m_key] = {"sent": 0, "received": 0}
-                            monthly_aggs[m_key]["sent"] += log["bytes_sent"]
-                            monthly_aggs[m_key]["received"] += log["bytes_received"]
-
-                        await conn.executemany("""
-                            INSERT INTO usage_logs (device_id, timestamp, bytes_sent, bytes_received)
-                            VALUES ($1, $2, $3, $4)
-                        """, sync_data)
-                        
-                        # Update daily aggregates (Batch)
-                        for (device_id, log_date), stats in daily_aggs.items():
+                        for day in daily:
                             await conn.execute("""
                                 INSERT INTO daily_aggregates (device_id, date, bytes_sent, bytes_received)
                                 VALUES ($1, $2, $3, $4)
                                 ON CONFLICT (device_id, date) DO UPDATE SET
                                     bytes_sent = daily_aggregates.bytes_sent + EXCLUDED.bytes_sent,
                                     bytes_received = daily_aggregates.bytes_received + EXCLUDED.bytes_received
-                            """, device_id, log_date, stats["sent"], stats["received"])
-                            
-                        # Update monthly aggregates (Batch)
-                        for (device_id, month_str), stats in monthly_aggs.items():
+                            """, day["device_id"], day["date"], day["bytes_sent"], day["bytes_received"])
+                        
+                        for m in monthly:
                             await conn.execute("""
                                 INSERT INTO monthly_aggregates (device_id, month, bytes_sent, bytes_received)
                                 VALUES ($1, $2, $3, $4)
                                 ON CONFLICT (device_id, month) DO UPDATE SET
                                     bytes_sent = monthly_aggregates.bytes_sent + EXCLUDED.bytes_sent,
                                     bytes_received = monthly_aggregates.bytes_received + EXCLUDED.bytes_received
-                            """, device_id, month_str, stats["sent"], stats["received"])
+                            """, m["device_id"], m["month"], m["bytes_sent"], m["bytes_received"])
                 
-                # Mark as synced
-                log_ids = [log["id"] for log in logs]
-                storage.mark_logs_synced(log_ids)
-                
-                print(f"Synced {len(logs)} logs to NeonDB")
+                logger.info("Synced %d daily + %d monthly aggregates to NeonDB", len(daily), len(monthly))
                 break
                 
             except Exception as e:
@@ -198,7 +187,14 @@ class NeonSync:
                     raise
 
     async def get_global_today_usage(self) -> Tuple[int, int]:
-        """Fetch today's total usage across all devices from NeonDB."""
+        """Fetch today's total usage across all devices from NeonDB.
+        
+        Free-tier optimization: Results cached locally for {self._cache_ttl}s.
+        """
+        cached = self._cache_get("global_today")
+        if cached is not None:
+            return cached
+        
         if not self.enabled or not self.pool:
             return 0, 0
             
@@ -214,13 +210,22 @@ class NeonSync:
                 """, today_date)
                 
                 if row and row["total_sent"] is not None:
-                    return int(row["total_sent"]), int(row["total_received"])
+                    result = (int(row["total_sent"]), int(row["total_received"]))
+                    self._cache_set("global_today", result)
+                    return result
         except Exception as e:
-            print(f"Failed to fetch global today usage: {e}")
+            logger.error("Failed to fetch global today usage: %s", e)
         return 0, 0
 
     async def get_global_lifetime_usage(self) -> Tuple[int, int]:
-        """Fetch lifetime total usage across all devices from NeonDB."""
+        """Fetch lifetime total usage across all devices from NeonDB.
+        
+        Free-tier optimization: Results cached locally for {self._cache_ttl}s.
+        """
+        cached = self._cache_get("global_lifetime")
+        if cached is not None:
+            return cached
+        
         if not self.enabled or not self.pool:
             return 0, 0
             
@@ -234,38 +239,53 @@ class NeonSync:
                 """)
                 
                 if row and row["total_sent"] is not None:
-                    return int(row["total_sent"]), int(row["total_received"])
+                    result = (int(row["total_sent"]), int(row["total_received"]))
+                    self._cache_set("global_lifetime", result)
+                    return result
         except Exception as e:
-            print(f"Failed to fetch global lifetime usage: {e}")
+            logger.error("Failed to fetch global lifetime usage: %s", e)
         return 0, 0
 
     async def get_device_count(self) -> int:
-        """Get the count of distinct devices in the network."""
+        """Get the count of distinct devices in the network.
+        
+        Free-tier optimization: Results cached locally for {self._cache_ttl}s
+        to avoid burning CU-hours on every dashboard poll.
+        """
+        cached = self._cache_get("device_count")
+        if cached is not None:
+            return cached
+        
         if not self.enabled or not self.pool:
             return 1
             
         try:
             async with self.pool.acquire() as conn:
                 count = await conn.fetchval("SELECT COUNT(*) FROM devices")
-                return count or 1
+                result = count or 1
+                self._cache_set("device_count", result)
+                return result
         except Exception as e:
-            print(f"Failed to fetch device count: {e}")
+            logger.error("Failed to fetch device count: %s", e)
         return 1
     
     async def vacuum_database(self) -> bool:
-        """Run VACUUM ANALYZE on NeonDB to reclaim space after deletions."""
+        """Run VACUUM ANALYZE on NeonDB to reclaim space after deletions.
+        
+        Free-tier optimization: Only vacuums aggregate tables — raw usage_logs
+        are no longer synced to NeonDB.
+        """
         if not self.enabled or not self.pool:
             return False
         
         try:
             async with self.pool.acquire() as conn:
-                await conn.execute("VACUUM ANALYZE usage_logs")
                 await conn.execute("VACUUM ANALYZE daily_aggregates")
                 await conn.execute("VACUUM ANALYZE monthly_aggregates")
                 await conn.execute("VACUUM ANALYZE devices")
                 return True
         except Exception as e:
-            print(f"Failed to vacuum NeonDB: {e}")
+            logger.error("Failed to vacuum NeonDB: %s", e)
         return False
 
     async def get_storage_usage_percent(self) -> float:
@@ -276,61 +296,53 @@ class NeonSync:
 
     async def aggressive_cleanup(self) -> dict:
         """Aggressive cleanup when storage is critically high.
-        Reduces retention to minimal levels to free space quickly."""
-        if not self.enabled or not self.pool:
-            return {"logs_deleted": 0, "aggregates_deleted": {}, "vacuum_run": False}
         
-        results = {"logs_deleted": 0, "aggregates_deleted": {}, "vacuum_run": False}
+        Free-tier optimization: Only cleans aggregates — raw logs are no
+        longer synced to NeonDB. Reduces retention to minimal levels.
+        """
+        if not self.enabled or not self.pool:
+            return {"aggregates_deleted": {}, "vacuum_run": False}
+        
+        results = {"aggregates_deleted": {}, "vacuum_run": False}
         
         try:
             async with self.pool.acquire() as conn:
-                result = await conn.execute("""
-                    DELETE FROM usage_logs
-                    WHERE timestamp < NOW() - INTERVAL '3 days'
-                """)
-                results["logs_deleted"] = int(result.split()[-1]) if result else 0
-                
-                daily_result = await conn.execute("""
-                    DELETE FROM daily_aggregates
-                    WHERE date < CURRENT_DATE - INTERVAL '1 month'
+                daily_deleted = await conn.fetchval("""
+                    WITH deleted AS (
+                        DELETE FROM daily_aggregates
+                        WHERE date < CURRENT_DATE - INTERVAL '1 month'
+                        RETURNING 1
+                    )
+                    SELECT COUNT(*) FROM deleted
                 """)
                 
-                monthly_result = await conn.execute("""
-                    DELETE FROM monthly_aggregates
-                    WHERE month < TO_CHAR(CURRENT_DATE - INTERVAL '2 months', 'YYYY-MM')
+                monthly_deleted = await conn.fetchval("""
+                    WITH deleted AS (
+                        DELETE FROM monthly_aggregates
+                        WHERE month < TO_CHAR(CURRENT_DATE - INTERVAL '2 months', 'YYYY-MM')
+                        RETURNING 1
+                    )
+                    SELECT COUNT(*) FROM deleted
                 """)
                 
                 results["aggregates_deleted"] = {
-                    "daily": int(daily_result.split()[-1]) if daily_result else 0,
-                    "monthly": int(monthly_result.split()[-1]) if monthly_result else 0
+                    "daily": daily_deleted or 0,
+                    "monthly": monthly_deleted or 0
                 }
             
             results["vacuum_run"] = await self.vacuum_database()
             
         except Exception as e:
-            print(f"Aggressive cleanup failed: {e}")
+            logger.error("Aggressive cleanup failed: %s", e)
         
         return results
 
     async def cleanup_old_logs(self, days_to_keep: int = 30) -> int:
-        if not self.enabled or not self.pool:
-            return 0
+        """Deprecated: Raw logs are no longer synced to NeonDB.
         
-        try:
-            async with self.pool.acquire() as conn:
-                result = await conn.execute("""
-                    DELETE FROM usage_logs
-                    WHERE timestamp < NOW() - INTERVAL '1 day' * $1
-                """, days_to_keep)
-                
-                deleted = int(result.split()[-1]) if result else 0
-            
-            if deleted > 0 and config.storage.vacuum_after_cleanup:
-                await self.vacuum_database()
-            
-            return deleted
-        except Exception as e:
-            print(f"Failed to cleanup old logs: {e}")
+        Kept for API backward compatibility. Returns 0 immediately.
+        Use cleanup_old_aggregates() instead.
+        """
         return 0
 
     async def cleanup_old_aggregates(self, months_to_keep: int = 12) -> dict:
@@ -339,58 +351,51 @@ class NeonSync:
         
         try:
             async with self.pool.acquire() as conn:
-                daily_result = await conn.execute("""
-                    DELETE FROM daily_aggregates
-                    WHERE date < CURRENT_DATE - INTERVAL '1 month' * $1
+                daily_deleted = await conn.fetchval("""
+                    WITH deleted AS (
+                        DELETE FROM daily_aggregates
+                        WHERE date < CURRENT_DATE - INTERVAL '1 month' * $1
+                        RETURNING 1
+                    )
+                    SELECT COUNT(*) FROM deleted
                 """, months_to_keep)
                 
-                monthly_result = await conn.execute("""
-                    DELETE FROM monthly_aggregates
-                    WHERE month < TO_CHAR(CURRENT_DATE - INTERVAL '1 month' * $1, 'YYYY-MM')
+                monthly_deleted = await conn.fetchval("""
+                    WITH deleted AS (
+                        DELETE FROM monthly_aggregates
+                        WHERE month < TO_CHAR(CURRENT_DATE - INTERVAL '1 month' * $1, 'YYYY-MM')
+                        RETURNING 1
+                    )
+                    SELECT COUNT(*) FROM deleted
                 """, months_to_keep)
-                
-                daily_deleted = int(daily_result.split()[-1]) if daily_result else 0
-                monthly_deleted = int(monthly_result.split()[-1]) if monthly_result else 0
                 
                 return {
-                    "daily_deleted": daily_deleted,
-                    "monthly_deleted": monthly_deleted
+                    "daily_deleted": daily_deleted or 0,
+                    "monthly_deleted": monthly_deleted or 0
                 }
         except Exception as e:
-            print(f"Failed to cleanup old aggregates: {e}")
+            logger.error("Failed to cleanup old aggregates: %s", e)
         return {"daily_deleted": 0, "monthly_deleted": 0}
 
     async def get_remote_stats(self) -> dict:
+        """Get remote statistics.
+        
+        Free-tier optimization: Only queries aggregate tables and devices.
+        Raw usage_logs are no longer synced to NeonDB.
+        """
         if not self.enabled or not self.pool:
             return {
                 "device_count": 0,
-                "log_count": 0,
-                "logs_per_device": [],
-                "oldest_log": None,
-                "newest_log": None,
+                "daily_count": 0,
+                "monthly_count": 0,
                 "table_sizes": {}
             }
         
         try:
             async with self.pool.acquire() as conn:
                 device_count = await conn.fetchval("SELECT COUNT(*) FROM devices")
-                
-                log_count = await conn.fetchval("SELECT COUNT(*) FROM usage_logs")
-                
-                logs_per_device = await conn.fetch("""
-                    SELECT device_id, COUNT(*) as log_count
-                    FROM usage_logs
-                    GROUP BY device_id
-                    ORDER BY log_count DESC
-                """)
-                
-                oldest_log = await conn.fetchval("""
-                    SELECT MIN(timestamp) FROM usage_logs
-                """)
-                
-                newest_log = await conn.fetchval("""
-                    SELECT MAX(timestamp) FROM usage_logs
-                """)
+                daily_count = await conn.fetchval("SELECT COUNT(*) FROM daily_aggregates")
+                monthly_count = await conn.fetchval("SELECT COUNT(*) FROM monthly_aggregates")
                 
                 table_sizes = await conn.fetch("""
                     SELECT 
@@ -402,26 +407,19 @@ class NeonSync:
                 
                 return {
                     "device_count": device_count or 0,
-                    "log_count": log_count or 0,
-                    "logs_per_device": [
-                        {"device_id": row["device_id"], "log_count": row["log_count"]}
-                        for row in logs_per_device
-                    ],
-                    "oldest_log": oldest_log.isoformat() if oldest_log else None,
-                    "newest_log": newest_log.isoformat() if newest_log else None,
+                    "daily_count": daily_count or 0,
+                    "monthly_count": monthly_count or 0,
                     "table_sizes": {
                         row["tablename"]: row["size_bytes"] or 0
                         for row in table_sizes
                     }
                 }
         except Exception as e:
-            print(f"Failed to get remote stats: {e}")
+            logger.error("Failed to get remote stats: %s", e)
         return {
             "device_count": 0,
-            "log_count": 0,
-            "logs_per_device": [],
-            "oldest_log": None,
-            "newest_log": None,
+            "daily_count": 0,
+            "monthly_count": 0,
             "table_sizes": {}
         }
 
@@ -459,7 +457,7 @@ class NeonSync:
                     "tables": tables
                 }
         except Exception as e:
-            print(f"Failed to get storage usage: {e}")
+            logger.error("Failed to get storage usage: %s", e)
         return {"total_mb": 0.0, "tables": {}}
 
     async def stop(self):
@@ -471,7 +469,7 @@ class NeonSync:
             try:
                 await self._sync_data()
             except Exception as e:
-                print(f"Final sync error: {e}")
+                logger.error("Final sync error: %s", e)
         
         if self.pool:
             await self.pool.close()

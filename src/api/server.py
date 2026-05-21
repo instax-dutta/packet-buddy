@@ -1,9 +1,12 @@
 """FastAPI server with CORS and static file serving."""
 
 import asyncio
+import logging
 import signal
 from datetime import datetime, timedelta
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -73,104 +76,63 @@ async def periodic_cleanup():
     
     while True:
         try:
-            print(f"🧹 Running periodic cleanup (interval: {cleanup_interval_hours}h)...")
+            logger.info("Running periodic cleanup (interval: %dh)...", cleanup_interval_hours)
             cleanup_results = {
                 'synced_logs_deleted': 0,
                 'daily_aggregates_deleted': 0,
                 'monthly_aggregates_deleted': 0,
-                'neon_logs_deleted': 0,
                 'neon_daily_deleted': 0,
                 'neon_monthly_deleted': 0,
                 'vacuum_run': False,
-                'storage_warning': None,
-                'neon_storage_before_percent': None,
-                'neon_storage_after_percent': None,
-                'neon_vacuum_run': False,
-                'aggressive_cleanup_triggered': False
+                'storage_warning': None
             }
             
             try:
-                deleted_logs = storage.cleanup_synced_logs(days_to_keep=log_retention_days)
+                deleted_logs = storage.cleanup_all_old_logs(days_to_keep=log_retention_days)
                 cleanup_results['synced_logs_deleted'] = deleted_logs
-                print(f"  Local: Deleted {deleted_logs} synced logs older than {log_retention_days} days")
+                logger.info("Local: Deleted %d old raw logs (retention: %d days)", deleted_logs, log_retention_days)
             except Exception as e:
-                print(f"  Local log cleanup failed: {e}")
+                logger.error("Local log cleanup failed: %s", e)
             
             try:
                 aggregates_result = storage.cleanup_old_aggregates(months_to_keep=aggregate_retention_months)
                 cleanup_results['daily_aggregates_deleted'] = aggregates_result.get('daily', 0)
                 cleanup_results['monthly_aggregates_deleted'] = aggregates_result.get('monthly', 0)
-                print(f"  Local: Deleted {aggregates_result.get('daily', 0)} daily, {aggregates_result.get('monthly', 0)} monthly aggregates")
+                logger.info("Local: Deleted %d daily, %d monthly aggregates", aggregates_result.get('daily', 0), aggregates_result.get('monthly', 0))
             except Exception as e:
-                print(f"  Local aggregates cleanup failed: {e}")
+                logger.error("Local aggregates cleanup failed: %s", e)
             
             if vacuum_after_cleanup:
                 try:
                     storage.vacuum_database()
                     cleanup_results['vacuum_run'] = True
-                    print("  Local: Database vacuum completed")
+                    logger.info("Local: Database vacuum completed")
                 except Exception as e:
-                    print(f"  Database vacuum failed: {e}")
+                    logger.error("Database vacuum failed: %s", e)
             
             if config.sync_enabled:
-                try:
-                    neon_storage_before = await sync.get_storage_usage_percent()
-                    cleanup_results['neon_storage_before_percent'] = neon_storage_before
-                    print(f"  NeonDB: Storage usage before cleanup: {neon_storage_before:.1f}%")
-                    
-                    if neon_storage_before > 80:
-                        print(f"  NeonDB: ⚠️ Storage crisis detected ({neon_storage_before:.1f}% > 80%), running aggressive cleanup...")
-                        cleanup_results['aggressive_cleanup_triggered'] = True
-                        try:
-                            aggressive_result = await sync.aggressive_cleanup()
-                            print(f"  NeonDB: Aggressive cleanup deleted {aggressive_result.get('logs_deleted', 0)} logs, {aggressive_result.get('aggregates_deleted', 0)} aggregates")
-                        except Exception as e:
-                            print(f"  NeonDB: Aggressive cleanup failed: {e}")
-                except Exception as e:
-                    print(f"  NeonDB: Failed to check storage usage: {e}")
-                
-                try:
-                    neon_logs_deleted = await sync.cleanup_old_logs(days_to_keep=neon_log_retention_days)
-                    cleanup_results['neon_logs_deleted'] = neon_logs_deleted
-                    print(f"  NeonDB: Deleted {neon_logs_deleted} old logs (retention: {neon_log_retention_days} days)")
-                except Exception as e:
-                    print(f"  NeonDB log cleanup failed: {e}")
-                
                 try:
                     neon_aggregates = await sync.cleanup_old_aggregates(months_to_keep=neon_aggregate_retention_months)
                     cleanup_results['neon_daily_deleted'] = neon_aggregates.get('daily_deleted', 0)
                     cleanup_results['neon_monthly_deleted'] = neon_aggregates.get('monthly_deleted', 0)
-                    print(f"  NeonDB: Deleted {neon_aggregates.get('daily_deleted', 0)} daily, {neon_aggregates.get('monthly_deleted', 0)} monthly aggregates (retention: {neon_aggregate_retention_months} months)")
+                    if neon_aggregates.get('daily_deleted', 0) > 0 or neon_aggregates.get('monthly_deleted', 0) > 0:
+                        logger.info("NeonDB: Deleted %d daily, %d monthly aggregates (retention: %d months)", neon_aggregates.get('daily_deleted', 0), neon_aggregates.get('monthly_deleted', 0), neon_aggregate_retention_months)
                 except Exception as e:
-                    print(f"  NeonDB aggregates cleanup failed: {e}")
-                
-                try:
-                    await sync.vacuum_database()
-                    cleanup_results['neon_vacuum_run'] = True
-                    print("  NeonDB: Database vacuum completed")
-                except Exception as e:
-                    print(f"  NeonDB vacuum failed: {e}")
-                
-                try:
-                    neon_storage_after = await sync.get_storage_usage_percent()
-                    cleanup_results['neon_storage_after_percent'] = neon_storage_after
-                    print(f"  NeonDB: Storage usage after cleanup: {neon_storage_after:.1f}%")
-                except Exception as e:
-                    print(f"  NeonDB: Failed to check storage usage after cleanup: {e}")
+                    logger.error("NeonDB aggregates cleanup failed: %s", e)
             
             try:
                 db_stats = storage.get_database_stats()
                 db_size_mb = db_stats.get('db_size_mb', 0)
                 if db_size_mb > max_storage_mb:
                     cleanup_results['storage_warning'] = f"Database size ({db_size_mb}MB) exceeds limit ({max_storage_mb}MB)"
-                    print(f"  ⚠️  Storage warning: {db_size_mb}MB exceeds {max_storage_mb}MB limit")
+                    logger.warning("Storage warning: %sMB exceeds %sMB limit", db_size_mb, max_storage_mb)
             except Exception as e:
-                print(f"  Storage stats check failed: {e}")
+                logger.error("Storage stats check failed: %s", e)
             
-            print("✅ Periodic cleanup completed")
+            logger.info("Periodic cleanup completed")
             
         except Exception as e:
-            print(f"Periodic cleanup failed (will retry): {e}")
+            logger.error("Periodic cleanup failed (will retry): %s", e)
         
         await asyncio.sleep(cleanup_interval_seconds)
 
@@ -200,27 +162,27 @@ async def run_background_services():
         check_interval_hours = config.get("auto_update", "check_interval_hours", default=6)
         
         if not auto_update_enabled:
-            print("ℹ️  Automatic updates disabled in config")
+            logger.info("Automatic updates disabled in config")
             return
         
         # Initial check on startup (after settling period)
         if check_on_startup:
             await asyncio.sleep(10)  # Wait for system to settle
             try:
-                print("🔍 Checking for updates on startup...")
+                logger.info("Checking for updates on startup...")
                 auto_update_check(force_restart=auto_restart, auto_apply=auto_apply)
             except Exception as e:
-                print(f"Startup update check failed: {e}")
+                logger.error("Startup update check failed: %s", e)
         
         # Periodic update checks (every N hours)
         check_interval_seconds = check_interval_hours * 3600
         while True:
             await asyncio.sleep(check_interval_seconds)
             try:
-                print(f"🔍 Periodic update check (every {check_interval_hours}h)...")
+                logger.info("Periodic update check (every %dh)...", check_interval_hours)
                 auto_update_check(force_restart=auto_restart, auto_apply=auto_apply)
             except Exception as e:
-                print(f"Periodic update check failed: {e}")
+                logger.error("Periodic update check failed: %s", e)
 
     update_task = asyncio.create_task(periodic_update_check())
     background_tasks.add(update_task)
@@ -242,7 +204,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Graceful shutdown."""
-    print("\nShutting down gracefully...")
+    logger.info("Shutting down gracefully...")
     
     # Stop monitor and sync
     await monitor.stop()
@@ -254,19 +216,27 @@ async def shutdown_event():
     for task in background_tasks:
         task.cancel()
     
-    print("Shutdown complete.")
+    logger.info("Shutdown complete.")
 
 
 def run_server():
     """Run the FastAPI server."""
+    import sys
     import uvicorn
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        stream=sys.stderr,
+    )
     
     host = config.get("api", "host", default="127.0.0.1")
     port = config.get("api", "port", default=7373)
     
-    print(f"Starting PacketBuddy API server on http://{host}:{port}")
-    print(f"Dashboard: http://{host}:{port}/dashboard")
-    print("Press Ctrl+C to stop\n")
+    logger.info("Starting PacketBuddy API server on http://%s:%d", host, port)
+    logger.info("Dashboard: http://%s:%d/dashboard", host, port)
+    logger.info("Press Ctrl+C to stop")
     
     uvicorn.run(
         app,

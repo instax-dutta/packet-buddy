@@ -38,11 +38,28 @@ function setupEventListeners() {
     document.getElementById('export-btn').addEventListener('click', () => {
         window.location.href = '/api/export?format=csv';
     });
-    document.getElementById('html-export-btn').addEventListener('click', () => {
-        window.location.href = '/api/export?format=html';
+
+    // Year Wrap Up button — opens format picker popup
+    document.getElementById('wrapup-btn').addEventListener('click', () => {
+        document.getElementById('wrapup-popup').classList.add('open');
     });
-    document.getElementById('llm-export-btn').addEventListener('click', () => {
-        window.location.href = '/api/export/llm';
+
+    // Close popup
+    document.getElementById('popup-close').addEventListener('click', closeWrapupPopup);
+    document.getElementById('wrapup-popup').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeWrapupPopup();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeWrapupPopup();
+    });
+
+    // Format option click
+    document.querySelectorAll('.popup-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const format = btn.dataset.format;
+            window.location.href = `/api/export/wrapup?format=${format}`;
+            closeWrapupPopup();
+        });
     });
 
     document.getElementById('prev-month').addEventListener('click', () => {
@@ -634,6 +651,11 @@ function updateLastUpdate() {
     });
     const elem = document.getElementById('last-update');
     if (elem) elem.textContent = timeStr;
+}
+
+// Close wrap-up format picker popup
+function closeWrapupPopup() {
+    document.getElementById('wrapup-popup').classList.remove('open');
 }
 
 // Show notification (simple implementation)
