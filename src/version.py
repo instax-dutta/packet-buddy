@@ -45,3 +45,16 @@ def get_fresh_version() -> str:
         str: The current version string
     """
     return get_version()
+
+
+def get_release_date() -> str:
+    """Read the release date from the RELEASE_DATE file.
+    
+    Returns:
+        str: The release date string (e.g., "2026-03-16") or a fallback.
+    """
+    try:
+        release_date_file = Path(__file__).parent.parent / "RELEASE_DATE"
+        return release_date_file.read_text().strip()
+    except Exception:
+        return "unknown"

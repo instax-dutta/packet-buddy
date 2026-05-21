@@ -113,8 +113,8 @@ async function loadDeviceInfo() {
 
             // Show release date
             const releaseDateElem = document.getElementById('release-date');
-            if (releaseDateElem && data.timestamp) {
-                const releaseDate = new Date(data.timestamp);
+            if (releaseDateElem && data.release_date) {
+                const releaseDate = new Date(data.release_date + 'T00:00:00');
                 const formattedDate = releaseDate.toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'short',
@@ -223,13 +223,13 @@ async function loadTodayStats() {
         }
 
         // Update pie chart
-        updatePieChart(data.bytes_sent, data.bytes_received);
+        updatePieChart(displayData.bytes_sent, displayData.bytes_received);
 
         // Update percentages
-        const total = data.bytes_sent + data.bytes_received;
+        const total = displayData.bytes_sent + displayData.bytes_received;
         if (total > 0) {
-            const uploadPercent = ((data.bytes_sent / total) * 100).toFixed(1);
-            const downloadPercent = ((data.bytes_received / total) * 100).toFixed(1);
+            const uploadPercent = ((displayData.bytes_sent / total) * 100).toFixed(1);
+            const downloadPercent = ((displayData.bytes_received / total) * 100).toFixed(1);
             document.getElementById('upload-percent').textContent = uploadPercent + '%';
             document.getElementById('download-percent').textContent = downloadPercent + '%';
         }
@@ -265,9 +265,9 @@ async function loadLifetimeStats() {
             if (costElem) costElem.textContent = displayData.cost.total.cost_formatted;
         }
 
-        // Calculate average daily usage (estimate)
-        const totalBytes = data.total_bytes;
-        const avgDaily = totalBytes / 30; // Rough estimate
+        // Calculate average daily use (estimate) from displayData
+        const totalBytes = displayData.total_bytes;
+        const avgDaily = totalBytes / 30;
         document.getElementById('avg-daily').textContent = formatBytes(avgDaily);
 
         updateLastUpdate();

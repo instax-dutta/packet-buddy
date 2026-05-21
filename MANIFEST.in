@@ -1,4 +1,5 @@
 recursive-include dashboard *
 include VERSION
+include RELEASE_DATE
 include LICENSE
 include README.md
