@@ -68,15 +68,19 @@
                     <h3>Quick Actions</h3>
                 </div>
                 <div class="control-buttons">
-                    <button id="refresh-btn" class="control-btn primary">
+                    <button id="export-wizard-btn" class="control-btn primary">
+                        <span class="btn-icon">📥</span>
+                        <span>Export / Rewind</span>
+                    </button>
+                    <button id="refresh-btn" class="control-btn">
                         <span class="btn-icon">🔄</span>
                         <span>Refresh Data</span>
                     </button>
-                    <button id="wrapup-btn" class="control-btn primary">
+                    <button id="wrapup-btn" class="control-btn primary" style="display:none">
                         <span class="btn-icon">🎉</span>
                         <span>Year Wrap Up</span>
                     </button>
-                    <button id="export-btn" class="control-btn">
+                    <button id="export-btn" class="control-btn" style="display:none">
                         <span class="btn-icon">📥</span>
                         <span>Export CSV</span>
                     </button>
@@ -305,6 +309,63 @@
                             <span class="popup-option-desc">Token-optimized format for ChatGPT, Claude & AI agents</span>
                         </div>
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Wizard Popup -->
+        <div class="popup-overlay" id="export-popup">
+            <div class="popup export-popup">
+                <div class="popup-header">
+                    <span class="popup-title" id="export-popup-title">📥 Export Your Data</span>
+                    <button class="popup-close" id="export-popup-close">&times;</button>
+                </div>
+                <div class="export-wizard">
+                    <!-- Step 1: Range -->
+                    <div class="export-step" id="export-step-1">
+                        <div class="export-step-label">Step 1 of 2 — Choose Time Range</div>
+                        <div class="export-range-chips">
+                            <button class="export-chip active" data-range="month">This Month</button>
+                            <button class="export-chip" data-range="year">This Year</button>
+                            <button class="export-chip" data-range="today">Today</button>
+                            <button class="export-chip" data-range="week">This Week</button>
+                            <button class="export-chip" data-range="all">All Time</button>
+                            <button class="export-chip" data-range="custom">Custom</button>
+                        </div>
+                        <div class="export-custom-range" id="export-custom-range" style="display:none">
+                            <input type="date" id="export-start-date" class="export-date-input">
+                            <span>to</span>
+                            <input type="date" id="export-end-date" class="export-date-input">
+                        </div>
+                        <div id="export-preview" class="export-preview" style="display:none"></div>
+                        <button class="control-btn primary" id="export-next-format" style="margin-top:16px;width:100%">
+                            Next: Pick Format →
+                        </button>
+                    </div>
+                    <!-- Step 2: Format -->
+                    <div class="export-step" id="export-step-2" style="display:none">
+                        <div class="export-step-label">Step 2 of 2 — Choose Format</div>
+                        <div class="export-format-options">
+                            <button class="export-format-card" data-format="html">
+                                <span class="export-format-icon">🎨</span>
+                                <div class="export-format-info">
+                                    <div class="export-format-name">Visual Report</div>
+                                    <div class="export-format-desc">Spotify Wrapped-style HTML — perfect for sharing</div>
+                                </div>
+                            </button>
+                            <button class="export-format-card" data-format="markdown">
+                                <span class="export-format-icon">📝</span>
+                                <div class="export-format-info">
+                                    <div class="export-format-name">Markdown Summary</div>
+                                    <div class="export-format-desc">Narrative report for ChatGPT, Claude & AI agents</div>
+                                </div>
+                            </button>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:16px">
+                            <button class="control-btn" id="export-back-range" style="flex:1">← Back</button>
+                            <button class="control-btn primary" id="export-download" style="flex:2">⬇ Download</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
