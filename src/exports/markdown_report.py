@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 
 from ..core.device import get_device_info
-from ..utils.formatters import format_bytes
+from ..utils.formatters import format_bytes, format_speed
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def generate_markdown_report(data: dict) -> str:
     lines.append(f"- **Total Data:** {format_bytes(total_bytes)}")
     lines.append(f"- **Days Tracked:** {days}")
     lines.append(f"- **Daily Average:** {format_bytes(daily_avg)}")
-    lines.append(f"- **Peak Speed:** {format_bytes(peak_speed)}/s")
+    lines.append(f"- **Peak Speed:** {format_speed(peak_speed)}")
     lines.append("")
 
     lines.append("## Upload vs Download")

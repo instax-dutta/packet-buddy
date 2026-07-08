@@ -191,26 +191,11 @@ def _peak_day_html(data: dict) -> str:
     peak_speed = data.get("peak_speed", 0)
     if not peak_day:
         return ""
-    if isinstance(peak_day, dict):
-        date_str = peak_day.get("date", "")
-        sent = peak_day.get("bytes_sent", 0)
-        received = peak_day.get("bytes_received", 0)
-    else:
-        date_str = str(peak_day)
-        sent = 0
-        received = 0
-    detail = ""
-    if sent or received:
-        detail = (
-            f" &mdash; "
-            f"<span class=\"up\">&uarr;{format_bytes(sent)}</span> "
-            f"<span class=\"down\">&darr;{format_bytes(received)}</span>"
-        )
     speed_str = format_speed(peak_speed) if peak_speed else ""
     return (
         f'        <div class="peak-day-box">\n'
         f'          <div class="label">Peak Day</div>\n'
-        f'          <div class="value">{date_str}{detail}{" &middot; " + speed_str if speed_str else ""}</div>\n'
+        f'          <div class="value">{peak_day}{" &middot; " + speed_str if speed_str else ""}</div>\n'
         f'        </div>'
     )
 
