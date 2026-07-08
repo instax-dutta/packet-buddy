@@ -20,6 +20,7 @@ from ..core.storage import storage
 from ..utils.updater import auto_update_check
 from ..version import get_version
 from .routes import router
+from ..exports import export_router
 
 
 # Create FastAPI app
@@ -41,6 +42,7 @@ if config.get("api", "cors_enabled", default=True):
 
 # Include API routes
 app.include_router(router)
+app.include_router(export_router)
 
 # Serve dashboard static files
 dashboard_path = Path(__file__).parent.parent.parent / "dashboard"
