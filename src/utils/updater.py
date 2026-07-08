@@ -87,7 +87,22 @@ def check_for_updates() -> Tuple[bool, Optional[str], Optional[str]]:
     if not latest:
         return False, current, None
     
-    has_update = current != latest
+    # Check if local is ahead of remote (unpushed local changes)
+    try:
+        ahead_result = subprocess.run(
+            ["git", "rev-list", "--count", f"{latest}..{current}"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=5
+        )
+        ahead_count = int(ahead_result.stdout.strip()) if ahead_result.returncode == 0 else 0
+    except Exception:
+        ahead_count = 0
+
+    has_update = current != latest and ahead_count == 0
     return has_update, current, latest
 
 
