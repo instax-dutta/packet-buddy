@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDeviceInfo();
     startDataRefresh();
     setupEventListeners();
+    initExportWizard();
     updateClock();
     setInterval(updateClock, 1000);
 });
@@ -651,6 +652,107 @@ function updateLastUpdate() {
     });
     const elem = document.getElementById('last-update');
     if (elem) elem.textContent = timeStr;
+}
+
+// Export wizard
+let exportState = { rangeType: 'month', startDate: null, endDate: null, format: 'html' };
+
+function initExportWizard() {
+    document.getElementById('export-wizard-btn').addEventListener('click', () => {
+        resetExportWizard();
+        document.getElementById('export-popup').classList.add('open');
+    });
+
+    document.getElementById('export-popup-close').addEventListener('click', closeExportPopup);
+    document.getElementById('export-popup').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeExportPopup();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('export-popup').classList.contains('open')) {
+            closeExportPopup();
+        }
+    });
+
+    document.querySelectorAll('.export-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.export-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            exportState.rangeType = chip.dataset.range;
+            document.getElementById('export-custom-range').style.display =
+                exportState.rangeType === 'custom' ? 'flex' : 'none';
+        });
+    });
+
+    document.getElementById('export-next-format').addEventListener('click', () => {
+        if (exportState.rangeType === 'custom') {
+            const start = document.getElementById('export-start-date').value;
+            const end = document.getElementById('export-end-date').value;
+            if (!start || !end) {
+                showNotification('Please select start and end dates', 'error');
+                return;
+            }
+            if (start > end) {
+                showNotification('Start date must be before end date', 'error');
+                return;
+            }
+            exportState.startDate = start;
+            exportState.endDate = end;
+        }
+        const rangeLabels = { today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', all: 'All Time', custom: 'Custom Range' };
+        const preview = document.getElementById('export-preview');
+        preview.textContent = '📋 ' + (rangeLabels[exportState.rangeType] || exportState.rangeType) + (exportState.startDate ? ' (' + exportState.startDate + ' to ' + exportState.endDate + ')' : '');
+        preview.style.display = 'block';
+        document.getElementById('export-step-1').style.display = 'none';
+        document.getElementById('export-step-2').style.display = 'block';
+        document.getElementById('export-popup-title').textContent = '📥 Pick a Format';
+    });
+
+    document.getElementById('export-back-range').addEventListener('click', () => {
+        document.getElementById('export-step-2').style.display = 'none';
+        document.getElementById('export-step-1').style.display = 'block';
+        document.getElementById('export-popup-title').textContent = '📥 Export Your Data';
+    });
+
+    document.querySelectorAll('.export-format-card').forEach(card => {
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.export-format-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            exportState.format = card.dataset.format;
+        });
+    });
+    document.querySelector('.export-format-card[data-format="html"]').classList.add('active');
+
+    document.getElementById('export-download').addEventListener('click', triggerExport);
+}
+
+function resetExportWizard() {
+    exportState = { rangeType: 'month', startDate: null, endDate: null, format: 'html' };
+    document.getElementById('export-step-2').style.display = 'none';
+    document.getElementById('export-step-1').style.display = 'block';
+    document.getElementById('export-popup-title').textContent = '📥 Export Your Data';
+    document.getElementById('export-custom-range').style.display = 'none';
+    document.getElementById('export-preview').style.display = 'none';
+    document.querySelectorAll('.export-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('.export-chip[data-range="month"]').classList.add('active');
+    document.querySelectorAll('.export-format-card').forEach(c => c.classList.remove('active'));
+    document.querySelector('.export-format-card[data-format="html"]').classList.add('active');
+}
+
+function triggerExport() {
+    const params = new URLSearchParams();
+    params.append('range_type', exportState.rangeType);
+    params.append('format', exportState.format);
+    if (exportState.rangeType === 'custom') {
+        params.append('start_date', exportState.startDate);
+        params.append('end_date', exportState.endDate);
+    }
+    const url = `${API_BASE}/exports/generate?${params.toString()}`;
+    window.location.href = url;
+    closeExportPopup();
+}
+
+function closeExportPopup() {
+    document.getElementById('export-popup').classList.remove('open');
 }
 
 // Close wrap-up format picker popup
