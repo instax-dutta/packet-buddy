@@ -267,7 +267,7 @@ class Storage:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT date, bytes_sent, bytes_received, peak_speed
+                SELECT device_id, date, bytes_sent, bytes_received, peak_speed
                 FROM daily_aggregates
                 WHERE device_id = ?
                 ORDER BY date ASC

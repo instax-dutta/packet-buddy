@@ -209,8 +209,8 @@ async function loadTodayStats() {
         const response = await fetch(`${API_BASE}/today`);
         const data = await response.json();
 
-        // Use global data if available for total stitching
-        const displayData = data.global || data;
+        // Use global data if available and has actual data; fall back to local
+        const displayData = (data.global && data.global.total_bytes > 0) ? data.global : data;
 
         document.getElementById('today-upload').textContent = displayData.human_readable.sent;
         document.getElementById('today-download').textContent = displayData.human_readable.received;
@@ -218,7 +218,7 @@ async function loadTodayStats() {
 
         // Update badge to show if we're seeing global or local
         const todayHeader = document.querySelector('.stats-grid .card:nth-child(2) .badge, .stats-grid .card:nth-child(2) .time-badge');
-        if (todayHeader) todayHeader.textContent = data.global ? 'Total Network' : 'This Device';
+        if (todayHeader) todayHeader.textContent = displayData === data.global ? 'Total Network' : 'This Device';
 
         // Update peak speed from server today stats if available
         // FIX: Always use server's peak_speed as source of truth to prevent reset on page refresh
@@ -263,8 +263,8 @@ async function loadLifetimeStats() {
         const response = await fetch(`${API_BASE}/summary`);
         const data = await response.json();
 
-        // Use global data if available for total stitching
-        const displayData = data.global || data;
+        // Use global data if available and has actual data; fall back to local
+        const displayData = (data.global && data.global.total_bytes > 0) ? data.global : data;
 
         document.getElementById('lifetime-upload').textContent = displayData.human_readable.sent;
         document.getElementById('lifetime-download').textContent = displayData.human_readable.received;
@@ -273,7 +273,7 @@ async function loadLifetimeStats() {
         // Update badge
         const lifetimeBadge = document.querySelector('.stats-grid .card:nth-child(3) .badge');
         if (lifetimeBadge) {
-            lifetimeBadge.textContent = data.global ? 'Total Network' : 'This Device';
+            lifetimeBadge.textContent = displayData === data.global ? 'Total Network' : 'This Device';
         }
 
         // Display lifetime cost data
