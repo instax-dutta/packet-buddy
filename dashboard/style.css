@@ -836,3 +836,114 @@ body {
     opacity: 0.6;
     font-weight: 600;
 }
+
+/* Export Wizard */
+.export-popup {
+    max-width: 520px !important;
+}
+.export-step-label {
+    font-size: 0.85em;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+.export-range-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.export-chip {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: hsl(200, 25%, 90%);
+    padding: 10px 20px;
+    border-radius: 100px;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+.export-chip:hover {
+    background: rgba(255,255,255,0.1);
+}
+.export-chip.active {
+    background: hsl(170, 70%, 42%);
+    border-color: hsl(170, 70%, 42%);
+    color: #fff;
+}
+.export-custom-range {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+}
+.export-date-input {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: hsl(200, 25%, 90%);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85em;
+    flex: 1;
+    color-scheme: dark;
+}
+.export-format-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.export-format-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 18px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    color: hsl(200, 25%, 90%);
+    font-family: 'Nunito', sans-serif;
+}
+.export-format-card:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+}
+.export-format-card.active {
+    border-color: hsl(170, 70%, 42%);
+    background: rgba(180, 220, 210, 0.08);
+}
+.export-format-icon {
+    font-size: 1.8em;
+    flex-shrink: 0;
+}
+.export-format-info {
+    display: flex;
+    flex-direction: column;
+}
+.export-format-name {
+    font-weight: 800;
+    font-size: 1em;
+    margin-bottom: 2px;
+}
+.export-format-desc {
+    font-size: 0.8em;
+    opacity: 0.6;
+}
+.export-preview {
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    text-align: center;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
