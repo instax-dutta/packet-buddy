@@ -2,6 +2,8 @@
 
 import logging
 
+from datetime import date as date_type
+
 from fastapi import APIRouter, Query
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 
@@ -22,10 +24,13 @@ async def generate_export(
     end_date: str = Query(None, description="YYYY-MM-DD for custom range"),
 ):
     try:
+        start = date_type.fromisoformat(start_date) if start_date else None
+        end = date_type.fromisoformat(end_date) if end_date else None
+
         data = compute_export_data(
             range_type=range_type,
-            start_date=start_date,
-            end_date=end_date,
+            start_date=start,
+            end_date=end,
         )
 
         if data.get("total_bytes", 0) == 0:
