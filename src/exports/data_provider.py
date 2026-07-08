@@ -61,12 +61,17 @@ def compute_comparisons(total_bytes: int) -> dict:
     }
 
 
+VALID_RANGES = frozenset({"today", "week", "month", "year", "all", "custom"})
+
+
 def compute_export_data(
     range_type: str = "all",
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    include_global: bool = True,
 ) -> dict:
+    if range_type not in VALID_RANGES:
+        range_type = "all"
+
     today = date.today()
 
     if range_type == "today":
