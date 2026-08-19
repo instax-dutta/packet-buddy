@@ -4,44 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PacketBuddy - Ultra-lightweight network usage tracker">
-    <title>PacketBuddy Dashboard</title>
+    <meta name="description" content="PacketBuddy - Network Usage Intelligence">
+    <title>PacketBuddy</title>
 
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Fonts: Inter as DIN-heritage geometric sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Chart.js via CDN -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script
-        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="favicon.png">
 
-    <link rel="stylesheet" href="style.css?v=1.4.6">
+    <link rel="stylesheet" href="style.css?v=1.4.7">
 </head>
 
 <body>
-    <!-- Background glass blobs -->
-    <div class="blob-c">
-        <div class="shape-blob"></div>
-        <div class="shape-blob one"></div>
-        <div class="shape-blob two"></div>
-        <div class="shape-blob three"></div>
-        <div class="shape-blob four"></div>
-        <div class="shape-blob five"></div>
-        <div class="shape-blob six"></div>
-    </div>
-
     <div class="container">
-        <!-- Header -->
+
+        <!-- ═══ NAVIGATION ═══ -->
         <header class="header">
             <div class="logo">
                 <div class="logo-icon">
-                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="20" cy="20" r="18" stroke="hsl(var(--primary))" stroke-width="3" />
-                        <path d="M20 12v16M12 20h16" stroke="hsl(var(--accent))" stroke-width="3"
-                            stroke-linecap="round" />
+                    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="20" cy="20" r="18" stroke="#f0f0fa" stroke-width="1.5" opacity="0.6" />
+                        <path d="M20 12v16M12 20h16" stroke="#53d8fb" stroke-width="1.5" stroke-linecap="round" />
                     </svg>
                 </div>
                 <div class="logo-text">
@@ -51,7 +41,7 @@
             </div>
             <div class="header-controls">
                 <div class="device-info">
-                    <span class="device-icon">💻</span>
+                    <span class="device-icon">⬡</span>
                     <span id="device-name">Loading...</span>
                 </div>
                 <div class="status-badge">
@@ -61,59 +51,50 @@
             </div>
         </header>
 
-        <!-- Control Panel -->
+        <!-- ═══ CONTROL PANEL ═══ -->
         <section class="control-panel">
-            <div class="control-card">
-                <div class="control-header">
-                    <h3>Quick Actions</h3>
-                </div>
-                <div class="control-buttons">
-                    <button id="export-wizard-btn" class="control-btn primary">
-                        <span class="btn-icon">📥</span>
-                        <span>Export / Rewind</span>
-                    </button>
-                    <button id="refresh-btn" class="control-btn">
-                        <span class="btn-icon">🔄</span>
-                        <span>Refresh Data</span>
-                    </button>
-                    <button id="wrapup-btn" class="control-btn primary" style="display:none">
-                        <span class="btn-icon">🎉</span>
-                        <span>Year Wrap Up</span>
-                    </button>
-                    <button id="export-btn" class="control-btn" style="display:none">
-                        <span class="btn-icon">📥</span>
-                        <span>Export CSV</span>
-                    </button>
-                </div>
+            <div class="section-label">Quick Actions</div>
+            <div class="control-buttons">
+                <button id="export-wizard-btn" class="control-btn primary">
+                    <span class="btn-icon">↓</span>
+                    <span>Export / Rewind</span>
+                </button>
+                <button id="refresh-btn" class="control-btn">
+                    <span class="btn-icon">↻</span>
+                    <span>Refresh Data</span>
+                </button>
+                <button id="wrapup-btn" class="control-btn primary" style="display:none">
+                    <span class="btn-icon">◈</span>
+                    <span>Year Wrap Up</span>
+                </button>
+                <button id="export-btn" class="control-btn" style="display:none">
+                    <span class="btn-icon">↓</span>
+                    <span>Export CSV</span>
+                </button>
             </div>
         </section>
 
-        <!-- Enhanced Live Stats -->
+        <!-- ═══ LIVE STATS ═══ -->
         <section class="stats-grid">
-            <div class="card">
 
+            <!-- Live Speed -->
+            <div class="card">
                 <div class="card-header">
                     <div class="header-left">
                         <span class="card-icon">⚡</span>
                         <h3>Live Speed</h3>
                     </div>
-
                 </div>
                 <div class="stat-row">
                     <div class="stat">
-                        <span class="stat-label">
-                            <span class="label-icon">↑</span> Upload
-                        </span>
+                        <span class="stat-label"><span class="label-icon">↑</span> Upload</span>
                         <span class="stat-value animate-number" id="live-upload">0 B/s</span>
                         <div class="stat-bar">
                             <div class="stat-bar-fill upload" id="upload-bar"></div>
                         </div>
                     </div>
-                    <div class="stat-divider"></div>
                     <div class="stat">
-                        <span class="stat-label">
-                            <span class="label-icon">↓</span> Download
-                        </span>
+                        <span class="stat-label"><span class="label-icon">↓</span> Download</span>
                         <span class="stat-value animate-number" id="live-download">0 B/s</span>
                         <div class="stat-bar">
                             <div class="stat-bar-fill download" id="download-bar"></div>
@@ -125,11 +106,11 @@
                 </div>
             </div>
 
+            <!-- Today -->
             <div class="card">
-
                 <div class="card-header">
                     <div class="header-left">
-                        <span class="card-icon">📅</span>
+                        <span class="card-icon">◈</span>
                         <h3>Today</h3>
                     </div>
                     <span class="time-badge" id="current-time"></span>
@@ -139,7 +120,6 @@
                         <span class="stat-label">Uploaded</span>
                         <span class="stat-value accent-purple" id="today-upload">0 B</span>
                     </div>
-                    <div class="stat-divider"></div>
                     <div class="stat">
                         <span class="stat-label">Downloaded</span>
                         <span class="stat-value accent-blue" id="today-download">0 B</span>
@@ -150,22 +130,21 @@
                     <span class="total-value" id="today-total">0 B</span>
                 </div>
                 <div class="cost-row">
-                    <div class="cost-accent-bar"></div>
-                    <div class="cost-main">
-                        <div class="cost-top">
-                            <span class="cost-label">💰 Est. Cost</span>
-                            <span class="cost-note">@ ₹7.50/GB</span>
+                    <div class="cost-top">
+                        <div>
+                            <div class="cost-label">Est. Cost</div>
+                            <div class="cost-note">@ ₹7.50/GB</div>
                         </div>
                         <span class="cost-value" id="today-cost">₹0.00</span>
                     </div>
                 </div>
             </div>
 
+            <!-- Lifetime -->
             <div class="card">
-
                 <div class="card-header">
                     <div class="header-left">
-                        <span class="card-icon">🌐</span>
+                        <span class="card-icon">◉</span>
                         <h3>Lifetime</h3>
                     </div>
                     <span class="badge">All Devices</span>
@@ -175,7 +154,6 @@
                         <span class="stat-label">Uploaded</span>
                         <span class="stat-value accent-purple" id="lifetime-upload">0 B</span>
                     </div>
-                    <div class="stat-divider"></div>
                     <div class="stat">
                         <span class="stat-label">Downloaded</span>
                         <span class="stat-value accent-blue" id="lifetime-download">0 B</span>
@@ -186,37 +164,37 @@
                     <span class="total-value" id="lifetime-total">0 B</span>
                 </div>
                 <div class="cost-row lifetime">
-                    <div class="cost-accent-bar"></div>
-                    <div class="cost-main">
-                        <div class="cost-top">
-                            <span class="cost-label">💰 Lifetime Cost</span>
-                            <span class="cost-note">@ ₹7.50/GB</span>
+                    <div class="cost-top">
+                        <div>
+                            <div class="cost-label">Lifetime Cost</div>
+                            <div class="cost-note">@ ₹7.50/GB</div>
                         </div>
                         <span class="cost-value" id="lifetime-cost">₹0.00</span>
                     </div>
                 </div>
             </div>
+
         </section>
 
-        <!-- Charts Grid -->
+        <!-- ═══ CHARTS ═══ -->
         <section class="charts-grid">
-            <!-- Monthly Chart -->
-            <div class="card chart-card">
 
+            <!-- Monthly Chart -->
+            <div class="chart-card">
                 <div class="card-header">
                     <div class="header-left">
-                        <span class="card-icon">📊</span>
+                        <span class="card-icon">▦</span>
                         <h3>Monthly Overview</h3>
                     </div>
                     <div class="month-selector">
                         <button id="prev-month" class="month-btn">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                                 <path d="M10 12L6 8l4-4" />
                             </svg>
                         </button>
                         <span id="current-month" class="month-label">Loading...</span>
                         <button id="next-month" class="month-btn">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                                 <path d="M6 4l4 4-4 4" />
                             </svg>
                         </button>
@@ -227,12 +205,11 @@
                 </div>
             </div>
 
-            <!-- Distribution Charts -->
-            <div class="card chart-card">
-
+            <!-- Distribution -->
+            <div class="chart-card">
                 <div class="card-header">
                     <div class="header-left">
-                        <span class="card-icon">🎯</span>
+                        <span class="card-icon">◎</span>
                         <h3>Today's Distribution</h3>
                     </div>
                 </div>
@@ -252,33 +229,34 @@
                     </div>
                 </div>
             </div>
+
         </section>
 
-        <!-- Stats Summary Cards -->
+        <!-- ═══ SUMMARY CARDS ═══ -->
         <section class="summary-grid">
             <div class="summary-card">
-                <span class="summary-icon">📈</span>
+                <span class="summary-icon">△</span>
                 <div class="summary-content">
                     <span class="summary-label">Avg Daily Usage</span>
                     <span class="summary-value" id="avg-daily">0 MB</span>
                 </div>
             </div>
             <div class="summary-card">
-                <span class="summary-icon">⏱️</span>
+                <span class="summary-icon">⚡</span>
                 <div class="summary-content">
                     <span class="summary-label">Peak Speed Today</span>
                     <span class="summary-value" id="peak-speed">0 MB/s</span>
                 </div>
             </div>
             <div class="summary-card">
-                <span class="summary-icon">📱</span>
+                <span class="summary-icon">⬡</span>
                 <div class="summary-content">
                     <span class="summary-label">Active Devices</span>
                     <span class="summary-value" id="device-count">1</span>
                 </div>
             </div>
             <div class="summary-card">
-                <span class="summary-icon">💾</span>
+                <span class="summary-icon">▦</span>
                 <div class="summary-content">
                     <span class="summary-label">Data Points</span>
                     <span class="summary-value" id="data-points">0</span>
@@ -286,115 +264,108 @@
             </div>
         </section>
 
-        <!-- Wrap-Up Format Picker Popup -->
-        <div class="popup-overlay" id="wrapup-popup">
-            <div class="popup">
-                <div class="popup-header">
-                    <span class="popup-title">🎉 Year Wrap Up</span>
-                    <button class="popup-close" id="popup-close">&times;</button>
-                </div>
-                <p class="popup-desc">Choose your wrap-up format:</p>
-                <div class="popup-options">
-                    <button class="popup-option" data-format="html">
-                        <span class="popup-option-icon">📄</span>
-                        <div class="popup-option-content">
-                            <span class="popup-option-title">Shareable Report</span>
-                            <span class="popup-option-desc">Beautiful HTML — perfect for screenshots & social sharing</span>
-                        </div>
-                    </button>
-                    <button class="popup-option" data-format="toon">
-                        <span class="popup-option-icon">🤖</span>
-                        <div class="popup-option-content">
-                            <span class="popup-option-title">AI Analysis (TOON)</span>
-                            <span class="popup-option-desc">Token-optimized format for ChatGPT, Claude & AI agents</span>
-                        </div>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Export Wizard Popup -->
-        <div class="popup-overlay" id="export-popup">
-            <div class="popup export-popup">
-                <div class="popup-header">
-                    <span class="popup-title" id="export-popup-title">📥 Export Your Data</span>
-                    <button class="popup-close" id="export-popup-close">&times;</button>
-                </div>
-                <div class="export-wizard">
-                    <!-- Step 1: Range -->
-                    <div class="export-step" id="export-step-1">
-                        <div class="export-step-label">Step 1 of 2 — Choose Time Range</div>
-                        <div class="export-range-chips">
-                            <button class="export-chip active" data-range="month">This Month</button>
-                            <button class="export-chip" data-range="year">This Year</button>
-                            <button class="export-chip" data-range="today">Today</button>
-                            <button class="export-chip" data-range="week">This Week</button>
-                            <button class="export-chip" data-range="all">All Time</button>
-                            <button class="export-chip" data-range="custom">Custom</button>
-                        </div>
-                        <div class="export-custom-range" id="export-custom-range" style="display:none">
-                            <input type="date" id="export-start-date" class="export-date-input">
-                            <span>to</span>
-                            <input type="date" id="export-end-date" class="export-date-input">
-                        </div>
-                        <div id="export-preview" class="export-preview" style="display:none"></div>
-                        <button class="control-btn primary" id="export-next-format" style="margin-top:16px;width:100%">
-                            Next: Pick Format →
-                        </button>
-                    </div>
-                    <!-- Step 2: Format -->
-                    <div class="export-step" id="export-step-2" style="display:none">
-                        <div class="export-step-label">Step 2 of 2 — Choose Format</div>
-                        <div class="export-format-options">
-                            <button class="export-format-card" data-format="html">
-                                <span class="export-format-icon">🎨</span>
-                                <div class="export-format-info">
-                                    <div class="export-format-name">Visual Report</div>
-                                    <div class="export-format-desc">Spotify Wrapped-style HTML — perfect for sharing</div>
-                                </div>
-                            </button>
-                            <button class="export-format-card" data-format="markdown">
-                                <span class="export-format-icon">📝</span>
-                                <div class="export-format-info">
-                                    <div class="export-format-name">Markdown Summary</div>
-                                    <div class="export-format-desc">Narrative report for ChatGPT, Claude & AI agents</div>
-                                </div>
-                            </button>
-                        </div>
-                        <div style="display:flex;gap:8px;margin-top:16px">
-                            <button class="control-btn" id="export-back-range" style="flex:1">← Back</button>
-                            <button class="control-btn primary" id="export-download" style="flex:2">⬇ Download</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
+        <!-- ═══ FOOTER ═══ -->
         <footer class="footer">
             <div class="footer-content">
-                <p>
-                    PacketBuddy <span id="app-version">v1.4.6</span> • Ultra-lightweight network usage tracker
-                    <span class="release-date" id="release-date"></span>
-                </p>
-                <div class="footer-links">
-                    <a href="/api/export?format=csv" download class="footer-link">
-                        <span>📊</span> CSV
-                    </a>
-                    <a href="/api/export?format=json" download class="footer-link">
-                        <span>📄</span> JSON
-                    </a>
-                </div>
+                PacketBuddy <span id="app-version">v1.4.6</span>
+                <span class="release-date" id="release-date"></span>
+            </div>
+            <div class="footer-links">
+                <a href="/api/export?format=csv" download class="footer-link">CSV</a>
+                <a href="/api/export?format=json" download class="footer-link">JSON</a>
             </div>
             <div class="footer-stats">
                 <span>Last updated: <span id="last-update">Never</span></span>
             </div>
         </footer>
-    </div>
 
     </div>
 
-    <script src="app.js?v=1.4.6"></script>
+    <!-- ═══ WRAP-UP FORMAT PICKER ═══ -->
+    <div class="popup-overlay" id="wrapup-popup">
+        <div class="popup">
+            <div class="popup-header">
+                <span class="popup-title">Year Wrap Up</span>
+                <button class="popup-close" id="popup-close">×</button>
+            </div>
+            <p class="popup-desc">Choose your wrap-up format</p>
+            <div class="popup-options">
+                <button class="popup-option" data-format="html">
+                    <span class="popup-option-icon">◇</span>
+                    <div class="popup-option-content">
+                        <span class="popup-option-title">Shareable Report</span>
+                        <span class="popup-option-desc">Beautiful HTML — perfect for screenshots & sharing</span>
+                    </div>
+                </button>
+                <button class="popup-option" data-format="toon">
+                    <span class="popup-option-icon">⬡</span>
+                    <div class="popup-option-content">
+                        <span class="popup-option-title">AI Analysis (TOON)</span>
+                        <span class="popup-option-desc">Token-optimized format for ChatGPT, Claude & AI agents</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ EXPORT WIZARD ═══ -->
+    <div class="popup-overlay" id="export-popup">
+        <div class="popup export-popup">
+            <div class="popup-header">
+                <span class="popup-title" id="export-popup-title">Export Your Data</span>
+                <button class="popup-close" id="export-popup-close">×</button>
+            </div>
+            <div class="export-wizard">
+                <!-- Step 1: Range -->
+                <div class="export-step" id="export-step-1">
+                    <div class="export-step-label">Step 1 of 2 — Choose Time Range</div>
+                    <div class="export-range-chips">
+                        <button class="export-chip active" data-range="month">This Month</button>
+                        <button class="export-chip" data-range="year">This Year</button>
+                        <button class="export-chip" data-range="today">Today</button>
+                        <button class="export-chip" data-range="week">This Week</button>
+                        <button class="export-chip" data-range="all">All Time</button>
+                        <button class="export-chip" data-range="custom">Custom</button>
+                    </div>
+                    <div class="export-custom-range" id="export-custom-range" style="display:none">
+                        <input type="date" id="export-start-date" class="export-date-input">
+                        <span style="color:var(--spectral-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px">to</span>
+                        <input type="date" id="export-end-date" class="export-date-input">
+                    </div>
+                    <div id="export-preview" class="export-preview" style="display:none"></div>
+                    <button class="control-btn primary" id="export-next-format" style="margin-top:16px;width:100%">
+                        Next: Pick Format →
+                    </button>
+                </div>
+                <!-- Step 2: Format -->
+                <div class="export-step" id="export-step-2" style="display:none">
+                    <div class="export-step-label">Step 2 of 2 — Choose Format</div>
+                    <div class="export-format-options">
+                        <button class="export-format-card" data-format="html">
+                            <span class="export-format-icon">◇</span>
+                            <div class="export-format-info">
+                                <div class="export-format-name">Visual Report</div>
+                                <div class="export-format-desc">Spotify Wrapped-style HTML — perfect for sharing</div>
+                            </div>
+                        </button>
+                        <button class="export-format-card" data-format="markdown">
+                            <span class="export-format-icon">▬</span>
+                            <div class="export-format-info">
+                                <div class="export-format-name">Markdown Summary</div>
+                                <div class="export-format-desc">Narrative report for ChatGPT, Claude & AI agents</div>
+                            </div>
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:16px">
+                        <button class="control-btn" id="export-back-range" style="flex:1">← Back</button>
+                        <button class="control-btn primary" id="export-download" style="flex:2">↓ Download</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=1.4.7"></script>
 </body>
 
 </html>

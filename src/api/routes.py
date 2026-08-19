@@ -79,21 +79,20 @@ async def live():
 @router.get("/today")
 async def today():
     """Today's total usage."""
-    bytes_sent, bytes_received, peak_speed = storage.get_today_usage()
-    
-    response = format_usage_response(bytes_sent, bytes_received, peak_speed)
-    
-    # Add cost information
-    cost_data = get_cost_breakdown(bytes_sent, bytes_received)
-    response["cost"] = cost_data
-
-    # Add global today stats if enabled
     if sync.enabled:
+        bytes_sent, bytes_received, peak_speed = storage.get_today_usage()
+        response = format_usage_response(bytes_sent, bytes_received, peak_speed)
+        response["cost"] = get_cost_breakdown(bytes_sent, bytes_received)
+
         global_sent, global_received = await sync.get_global_today_usage()
-        
         response["global"] = format_usage_response(global_sent, global_received)
         response["global"]["cost"] = get_cost_breakdown(global_sent, global_received)
-    
+    else:
+        # Sync off: show all local devices combined as primary
+        bytes_sent, bytes_received, peak_speed = storage.get_all_devices_today_usage()
+        response = format_usage_response(bytes_sent, bytes_received, peak_speed)
+        response["cost"] = get_cost_breakdown(bytes_sent, bytes_received)
+
     return response
 
 
@@ -101,14 +100,17 @@ async def today():
 async def cost(cost_per_gb: float = Query(DEFAULT_COST_PER_GB_INR, description="Cost per GB in INR")):
     """
     Calculate cost for today's usage.
-    
+
     Default: ₹7.50 per GB (average Indian mobile data cost)
     """
-    bytes_sent, bytes_received, peak_speed = storage.get_today_usage()
+    if sync.enabled:
+        bytes_sent, bytes_received, peak_speed = storage.get_today_usage()
+    else:
+        bytes_sent, bytes_received, peak_speed = storage.get_all_devices_today_usage()
     total_bytes = bytes_sent + bytes_received
-    
+
     cost_data = get_cost_breakdown(bytes_sent, bytes_received, cost_per_gb)
-    
+
     return {
         "usage": {
             "bytes_sent": bytes_sent,
@@ -130,14 +132,16 @@ async def month(month: Optional[str] = Query(None, description="YYYY-MM format")
     """Monthly usage breakdown by day."""
     if month is None:
         month = datetime.utcnow().strftime("%Y-%m")
-    
-    daily_data = storage.get_month_usage(month)
-    
-    # Format response
+
+    if sync.enabled:
+        daily_data = storage.get_month_usage(month)
+    else:
+        daily_data = storage.get_all_devices_month_usage(month)
+
     days = []
     total_sent = 0
     total_received = 0
-    
+
     for row in daily_data:
         days.append({
             "date": row["date"],
@@ -147,7 +151,7 @@ async def month(month: Optional[str] = Query(None, description="YYYY-MM format")
         })
         total_sent += row["bytes_sent"]
         total_received += row["bytes_received"]
-    
+
     return {
         "month": month,
         "days": days,
@@ -158,21 +162,19 @@ async def month(month: Optional[str] = Query(None, description="YYYY-MM format")
 @router.get("/summary")
 async def summary():
     """Lifetime total usage."""
-    bytes_sent, bytes_received = storage.get_lifetime_usage()
-    
-    response = format_usage_response(bytes_sent, bytes_received)
-    
-    # Add cost information
-    cost_data = get_cost_breakdown(bytes_sent, bytes_received)
-    response["cost"] = cost_data
-
-    # Add global lifetime stats if enabled
     if sync.enabled:
+        bytes_sent, bytes_received = storage.get_lifetime_usage()
+        response = format_usage_response(bytes_sent, bytes_received)
+        response["cost"] = get_cost_breakdown(bytes_sent, bytes_received)
+
         global_sent, global_received = await sync.get_global_lifetime_usage()
-        
         response["global"] = format_usage_response(global_sent, global_received)
         response["global"]["cost"] = get_cost_breakdown(global_sent, global_received)
-    
+    else:
+        bytes_sent, bytes_received = storage.get_all_devices_lifetime_usage()
+        response = format_usage_response(bytes_sent, bytes_received)
+        response["cost"] = get_cost_breakdown(bytes_sent, bytes_received)
+
     return response
 
 
@@ -190,14 +192,16 @@ async def range_query(
             status_code=400,
             content={"error": "Invalid date format. Use YYYY-MM-DD"}
         )
-    
-    daily_data = storage.get_range_usage(start, end)
-    
-    # Format response
+
+    if sync.enabled:
+        daily_data = storage.get_range_usage(start, end)
+    else:
+        daily_data = storage.get_all_devices_range_usage(start, end)
+
     days = []
     total_sent = 0
     total_received = 0
-    
+
     for row in daily_data:
         days.append({
             "date": row["date"],
@@ -207,7 +211,7 @@ async def range_query(
         })
         total_sent += row["bytes_sent"]
         total_received += row["bytes_received"]
-    
+
     return {
         "from": from_date,
         "to": to_date,
@@ -218,14 +222,17 @@ async def range_query(
 
 def _gather_export_data():
     """Shared data gathering for export endpoints.
-    
+
     Collects all data from storage once, computes derived insights,
     and returns a complete data dict to avoid redundant DB queries.
     """
     from ..utils.formatters import format_bytes
-    
+
     device_id, os_type, hostname = get_device_info()
-    stats = storage.get_all_export_stats()
+    if sync.enabled:
+        stats = storage.get_all_export_stats()
+    else:
+        stats = storage.get_all_devices_export_stats()
     
     daily_data = stats["daily_data"]
     monthly_summaries = stats["monthly_summaries"]

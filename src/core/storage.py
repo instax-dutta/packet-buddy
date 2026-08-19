@@ -248,7 +248,163 @@ class Storage:
             
             row = cursor.fetchone()
             return row["total_sent"], row["total_received"]
-    
+
+    # ── All-devices query variants (used when sync is off) ──────────
+
+    def get_all_devices_today_usage(self) -> Tuple[int, int, int]:
+        """Get today's usage summed across ALL devices."""
+        today = date.today()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT
+                    COALESCE(SUM(bytes_sent), 0) as total_sent,
+                    COALESCE(SUM(bytes_received), 0) as total_received,
+                    COALESCE(MAX(peak_speed), 0) as peak_speed
+                FROM daily_aggregates
+                WHERE date = ?
+            """, (today,))
+            row = cursor.fetchone()
+            return row["total_sent"], row["total_received"], row["peak_speed"]
+
+    def get_all_devices_lifetime_usage(self) -> Tuple[int, int]:
+        """Get total lifetime usage summed across ALL devices."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT
+                    COALESCE(SUM(bytes_sent), 0) as total_sent,
+                    COALESCE(SUM(bytes_received), 0) as total_received
+                FROM daily_aggregates
+            """)
+            row = cursor.fetchone()
+            return row["total_sent"], row["total_received"]
+
+    def get_all_devices_month_usage(self, month: str) -> List[Dict]:
+        """Get daily breakdown for a month summed across ALL devices."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT date,
+                       SUM(bytes_sent) as bytes_sent,
+                       SUM(bytes_received) as bytes_received
+                FROM daily_aggregates
+                WHERE strftime('%Y-%m', date) = ?
+                GROUP BY date
+                ORDER BY date ASC
+            """, (month,))
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_all_devices_range_usage(self, from_date: date, to_date: date) -> List[Dict]:
+        """Get usage for a date range summed across ALL devices."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT date,
+                       SUM(bytes_sent) as bytes_sent,
+                       SUM(bytes_received) as bytes_received
+                FROM daily_aggregates
+                WHERE date BETWEEN ? AND ?
+                GROUP BY date
+                ORDER BY date ASC
+            """, (from_date, to_date))
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_all_devices_daily_aggregates(self) -> List[Dict]:
+        """Get all daily aggregates across ALL devices."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT date,
+                       SUM(bytes_sent) as bytes_sent,
+                       SUM(bytes_received) as bytes_received,
+                       MAX(peak_speed) as peak_speed
+                FROM daily_aggregates
+                GROUP BY date
+                ORDER BY date ASC
+            """)
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_all_devices_monthly_summaries(self) -> List[Dict]:
+        """Get monthly summaries across ALL devices."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT
+                    strftime('%Y-%m', date) as month,
+                    SUM(bytes_sent) as bytes_sent,
+                    SUM(bytes_received) as bytes_received,
+                    MAX(peak_speed) as peak_speed,
+                    COUNT(DISTINCT device_id || '-' || date) as days_tracked
+                FROM daily_aggregates
+                GROUP BY strftime('%Y-%m', date)
+                ORDER BY month ASC
+            """)
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_all_devices_export_stats(self) -> dict:
+        """Get all export data across ALL devices in a single connection."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT date,
+                       SUM(bytes_sent) as bytes_sent,
+                       SUM(bytes_received) as bytes_received,
+                       MAX(peak_speed) as peak_speed
+                FROM daily_aggregates
+                GROUP BY date
+                ORDER BY date ASC
+            """)
+            daily_data = [dict(row) for row in cursor.fetchall()]
+
+            cursor.execute("""
+                SELECT
+                    strftime('%Y-%m', date) as month,
+                    SUM(bytes_sent) as bytes_sent,
+                    SUM(bytes_received) as bytes_received,
+                    MAX(peak_speed) as peak_speed,
+                    COUNT(DISTINCT date) as days_tracked
+                FROM daily_aggregates
+                GROUP BY strftime('%Y-%m', date)
+                ORDER BY month ASC
+            """)
+            monthly_summaries = [dict(row) for row in cursor.fetchall()]
+
+            cursor.execute("""
+                SELECT
+                    COALESCE(SUM(bytes_sent), 0) as total_sent,
+                    COALESCE(SUM(bytes_received), 0) as total_received
+                FROM daily_aggregates
+            """)
+            row = cursor.fetchone()
+            total_sent = row["total_sent"]
+            total_received = row["total_received"]
+
+            cursor.execute("""
+                SELECT MAX(peak_speed) as max_peak FROM daily_aggregates
+            """)
+            row = cursor.fetchone()
+            overall_peak = row["max_peak"] if row and row["max_peak"] else 0
+
+            cursor.execute("""
+                SELECT
+                    MIN(date) as first_tracked_date,
+                    MAX(date) as last_tracked_date,
+                    COUNT(DISTINCT date) as total_days_tracked
+                FROM daily_aggregates
+            """)
+            tracking_stats = dict(cursor.fetchone() or {})
+
+            return {
+                "daily_data": daily_data,
+                "monthly_summaries": monthly_summaries,
+                "total_sent": total_sent,
+                "total_received": total_received,
+                "overall_peak": overall_peak,
+                "tracking_stats": tracking_stats,
+            }
+
     def get_all_usage_logs(self) -> List[Dict]:
         """Get all usage logs for export."""
         with self.get_connection() as conn:

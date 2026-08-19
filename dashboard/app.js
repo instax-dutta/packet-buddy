@@ -329,11 +329,12 @@ function formatMonthDisplay(date) {
 
 // Initialize charts
 function initCharts() {
-    const primaryTeal = 'hsl(170, 70%, 42%)';
-    const accentPink = 'hsl(340, 60%, 60%)';
-    const textColor = 'hsl(200, 25%, 90%)';
-    const mutedColor = 'hsl(200, 15%, 55%)';
-    const gridColor = 'hsla(180, 20%, 18%, 0.3)';
+    const primaryTeal = '#53d8fb';
+    const accentPink = '#e94560';
+    const textColor = '#f0f0fa';
+    const mutedColor = 'rgba(240, 240, 250, 0.45)';
+    const gridColor = 'rgba(240, 240, 250, 0.06)';
+    const FONT = "'Inter', 'Arial Narrow', Arial, sans-serif";
 
     const commonOptions = {
         responsive: true,
@@ -343,23 +344,23 @@ function initCharts() {
                 display: false
             },
             tooltip: {
-                backgroundColor: 'hsla(240, 10%, 11%, 0.95)',
+                backgroundColor: '#0a0a0f',
                 titleColor: textColor,
                 bodyColor: textColor,
-                borderColor: primaryTeal,
+                borderColor: 'rgba(240, 240, 250, 0.15)',
                 borderWidth: 1,
                 padding: 12,
-                cornerRadius: 12,
+                cornerRadius: 4,
                 displayColors: true,
                 titleFont: {
-                    family: "'Nunito', sans-serif",
-                    size: 14,
-                    weight: '800'
+                    family: FONT,
+                    size: 11,
+                    weight: '700'
                 },
                 bodyFont: {
-                    family: "'Nunito', sans-serif",
-                    size: 13,
-                    weight: '600'
+                    family: FONT,
+                    size: 11,
+                    weight: '400'
                 }
             }
         }
@@ -402,8 +403,9 @@ function initCharts() {
                     ticks: {
                         color: mutedColor,
                         font: {
-                            family: "'Nunito', sans-serif",
-                            weight: '700'
+                            family: FONT,
+                            weight: '700',
+                            size: 10
                         }
                     }
                 },
@@ -414,8 +416,9 @@ function initCharts() {
                     ticks: {
                         color: mutedColor,
                         font: {
-                            family: "'Nunito', sans-serif",
-                            weight: '700'
+                            family: FONT,
+                            weight: '700',
+                            size: 10
                         },
                         callback: function (value) {
                             return formatBytes(value);
@@ -524,15 +527,16 @@ function initCharts() {
             const centerY = height / 2;
 
             // "TODAY" label
-            ctx.font = "700 0.7rem 'Nunito', sans-serif";
-            ctx.fillStyle = 'hsl(200, 15%, 55%)';
+            ctx.font = "700 9px 'Inter', sans-serif";
+            ctx.fillStyle = 'rgba(240, 240, 250, 0.45)';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            ctx.letterSpacing = '1.5px';
             ctx.fillText('TODAY', centerX, centerY - 14);
 
             // Total value
-            ctx.font = "900 1.1rem 'Nunito', sans-serif";
-            ctx.fillStyle = 'hsl(200, 25%, 90%)';
+            ctx.font = "700 16px 'Inter', sans-serif";
+            ctx.fillStyle = '#f0f0fa';
             ctx.fillText(formatBytes(total), centerX, centerY + 10);
 
             ctx.restore();
@@ -579,9 +583,9 @@ function initCharts() {
                     },
                     color: '#fff',
                     font: {
-                        family: "'Nunito', sans-serif",
-                        size: 13,
-                        weight: '800'
+                        family: FONT,
+                        size: 11,
+                        weight: '700'
                     },
                     anchor: 'center',
                     align: 'center',
