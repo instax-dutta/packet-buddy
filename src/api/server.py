@@ -91,14 +91,20 @@ async def periodic_cleanup():
             }
             
             try:
-                deleted_logs = storage.cleanup_all_old_logs(days_to_keep=log_retention_days)
+                if sync.enabled:
+                    deleted_logs = storage.cleanup_all_old_logs(days_to_keep=log_retention_days)
+                else:
+                    deleted_logs = storage.cleanup_all_old_logs_all_devices(days_to_keep=log_retention_days)
                 cleanup_results['synced_logs_deleted'] = deleted_logs
                 logger.info("Local: Deleted %d old raw logs (retention: %d days)", deleted_logs, log_retention_days)
             except Exception as e:
                 logger.error("Local log cleanup failed: %s", e)
-            
+
             try:
-                aggregates_result = storage.cleanup_old_aggregates(months_to_keep=aggregate_retention_months)
+                if sync.enabled:
+                    aggregates_result = storage.cleanup_old_aggregates(months_to_keep=aggregate_retention_months)
+                else:
+                    aggregates_result = storage.cleanup_old_aggregates_all_devices(months_to_keep=aggregate_retention_months)
                 cleanup_results['daily_aggregates_deleted'] = aggregates_result.get('daily', 0)
                 cleanup_results['monthly_aggregates_deleted'] = aggregates_result.get('monthly', 0)
                 logger.info("Local: Deleted %d daily, %d monthly aggregates", aggregates_result.get('daily', 0), aggregates_result.get('monthly', 0))

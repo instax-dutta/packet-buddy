@@ -306,7 +306,10 @@ async def export_wrapup(format: str = Query("html", description="html or toon"))
 
 async def export_csv():
     """Export data as CSV with comprehensive fields."""
-    daily_data = storage.get_all_daily_aggregates()
+    if sync.enabled:
+        daily_data = storage.get_all_daily_aggregates()
+    else:
+        daily_data = storage.get_all_devices_daily_aggregates()
     
     # Generate CSV with peak speeds
     output = io.StringIO()
@@ -339,7 +342,10 @@ async def export_json():
     device_id, os_type, hostname = get_device_info()
     
     # Get comprehensive data in a single connection
-    stats = storage.get_all_export_stats()
+    if sync.enabled:
+        stats = storage.get_all_export_stats()
+    else:
+        stats = storage.get_all_devices_export_stats()
     daily_data = stats["daily_data"]
     monthly_summaries = stats["monthly_summaries"]
     total_sent = stats["total_sent"]

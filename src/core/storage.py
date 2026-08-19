@@ -335,7 +335,7 @@ class Storage:
                     SUM(bytes_sent) as bytes_sent,
                     SUM(bytes_received) as bytes_received,
                     MAX(peak_speed) as peak_speed,
-                    COUNT(DISTINCT device_id || '-' || date) as days_tracked
+                    COUNT(DISTINCT date) as days_tracked
                 FROM daily_aggregates
                 GROUP BY strftime('%Y-%m', date)
                 ORDER BY month ASC
@@ -525,7 +525,7 @@ class Storage:
 
     def cleanup_all_old_logs(self, days_to_keep: int = 7) -> int:
         """Delete ALL old raw logs (regardless of sync status) older than N days.
-        
+
         Since raw logs are no longer synced to NeonDB for free-tier optimization,
         the `synced` flag stays 0. This method cleans them unconditionally.
         """
@@ -542,6 +542,21 @@ class Storage:
             logger.warning("Failed to cleanup old logs", exc_info=True)
             return 0
 
+    def cleanup_all_old_logs_all_devices(self, days_to_keep: int = 7) -> int:
+        """Delete ALL old raw logs across ALL devices older than N days."""
+        cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    DELETE FROM usage_logs
+                    WHERE timestamp < ?
+                """, (cutoff_date,))
+                return cursor.rowcount
+        except Exception:
+            logger.warning("Failed to cleanup old logs (all devices)", exc_info=True)
+            return 0
+
     def cleanup_old_aggregates(self, months_to_keep: int = 12) -> dict:
         """Delete aggregates older than N months. Returns counts dict."""
         cutoff_date = date.today() - timedelta(days=months_to_keep * 30)
@@ -555,7 +570,7 @@ class Storage:
                     WHERE date < ? AND device_id = ?
                 """, (cutoff_date, self.device_id))
                 result['daily'] = cursor.rowcount
-                
+
                 cursor.execute("""
                     DELETE FROM monthly_aggregates
                     WHERE month < ? AND device_id = ?
@@ -563,6 +578,29 @@ class Storage:
                 result['monthly'] = cursor.rowcount
         except Exception:
             logger.warning("Failed to cleanup old aggregates", exc_info=True)
+        return result
+
+    def cleanup_old_aggregates_all_devices(self, months_to_keep: int = 12) -> dict:
+        """Delete aggregates older than N months across ALL devices."""
+        cutoff_date = date.today() - timedelta(days=months_to_keep * 30)
+        cutoff_month = cutoff_date.strftime("%Y-%m")
+        result = {'daily': 0, 'monthly': 0}
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    DELETE FROM daily_aggregates
+                    WHERE date < ?
+                """, (cutoff_date,))
+                result['daily'] = cursor.rowcount
+
+                cursor.execute("""
+                    DELETE FROM monthly_aggregates
+                    WHERE month < ?
+                """, (cutoff_month,))
+                result['monthly'] = cursor.rowcount
+        except Exception:
+            logger.warning("Failed to cleanup old aggregates (all devices)", exc_info=True)
         return result
     
     def vacuum_database(self):
@@ -616,7 +654,7 @@ class Storage:
             
             if self.db_path.exists():
                 stats['db_size_mb'] = round(self.db_path.stat().st_size / (1024 * 1024), 2)
-                max_db_size = getattr(config, 'max_db_size_mb', 100)
+                max_db_size = config.storage.max_storage_mb
                 stats['storage_usage_percent'] = round((stats['db_size_mb'] / max_db_size) * 100, 1)
         except Exception:
             logger.warning("Failed to get database stats", exc_info=True)
